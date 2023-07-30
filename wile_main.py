@@ -27,41 +27,38 @@ from os import chdir as osChdir  # to change directories, such as when working w
 from datetime import datetime  # to mark files with the datetime their data was
 import pandas as pd
 
+
+# https://api.synopticdata.com/v2/stations/metadata?&state=CA&sensorvars=1&complete=1&token=
 SYNOPTIC_API_TOKEN = "eb977b5f24ed48b585ccb4e520906425"
 SYNOPTIC_API_ROOT = "https://api.synopticdata.com/v2/"
 SYNOPTIC_FILTER = "stations/latest"  # TODO: refactor so that this is function argument
 syn_api_req_url = osJoin(SYNOPTIC_API_ROOT, SYNOPTIC_FILTER) # URL to request synoptic data
-syn_api_args = {"token": SYNOPTIC_API_TOKEN, "stid": "KLAX"}  # arguments to pass to the synoptic API
+# syn_api_args = {"token": SYNOPTIC_API_TOKEN, "stid": "KLAX"}  # arguments to pass to the synoptic API
+syn_api_args = {"token": SYNOPTIC_API_TOKEN, "state": "CA"}  # arguments to pass to the synoptic API
 syn_resp = requests.get(syn_api_req_url, params=syn_api_args)
 syn_resp = syn_resp.json()  # despite it being called json(), this returns a dict object
 # syn_json = json.loads(syn_resp)  # convert the synoptic request to a JSON object
   # retrieve synoptic response and cast to JSON
-# print(syn_resp)
-# for block in syn_resp:
-#     print(block)
-for line in syn_resp['STATION']:
-    print(line)
 
 # TODO: decompose
-now = datetime.now()  # get current datetime
-now_str = now.strftime("%m.%d.%Y_%H.%M.%S")  # convert the datetime to a string
-syn_csv_filename = "synoptic_request_csv_" + now_str + ".csv"  #
+# now = datetime.now()  # get current datetime
+# now_str = now.strftime("%m.%d.%Y_%H.%M.%S")  # convert the datetime to a string
+# syn_csv_filename = "synoptic_request_csv_" + now_str + ".csv"  #
+syn_csv_filename = "synoptic_request.csv"
 
 # write the synoptic request to a CSV file
 osChdir(DATA_TMP_DIR)
 
-# TODO: refactor to use Pandas
-# with open(syn_csv_filename, 'w', newline='') as syn_csv:
-    # syn_fieldnames = syn_req_dict[0].keys()
-    # syn_writer = csv.DictWriter(syn_csv, fieldnames=syn_fieldnames)  # create writer object
-    # syn_writer.writeheader()  # write header to the csv file
-    # syn_writer.writerows(syn_req_dict)
-# syn_df = pd.DataFrame(syn_json)
-syn_df = pd.DataFrame(syn_resp['STATION'])
-with pd.option_context('display.max_rows', None,
-                       'display.max_columns', None,
-                       'display.precision', 3):
-    print(syn_df)
+# syn_df = pd.DataFrame(syn_resp['STATION'])
+syn_df = pd.json_normalize(syn_resp['STATION'])
+# TODO: filter any QC_FLAGGED = TRUE,
+#       filter unneeded columns
+
+# with pd.option_context('display.max_rows', None,
+#                        'display.max_columns', None,
+#                        'display.precision', 3):
+#     print(syn_df)
+
 syn_df.to_csv(syn_csv_filename)
 
 osChdir(WDIR)
