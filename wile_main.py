@@ -19,11 +19,11 @@ DATA_TMP_DIR = os.path.join(DATA_DIR, "tmp")  # where to store temporary data
 # WIFIRE historical sets
 
 # Synoptic realtime weather data
-import urllib.request as req # for accessing HTML-formatted and other web data
+import requests  # for accessing HTML-formatted and other web data
 from os.path import join as osJoin  # for concatenating strings to make a URL
 from os import chdir as osChdir  # to change directories, such as when working with data
-import csv  # for handling API data
-import json  # for handling API data
+# import csv  # for handling API data
+# import json  # for handling API data
 from datetime import datetime  # to mark files with the datetime their data was
 import pandas as pd
 
@@ -32,9 +32,13 @@ SYNOPTIC_API_ROOT = "https://api.synopticdata.com/v2/"
 SYNOPTIC_FILTER = "stations/latest"  # TODO: refactor so that this is function argument
 syn_api_req_url = osJoin(SYNOPTIC_API_ROOT, SYNOPTIC_FILTER) # URL to request synoptic data
 syn_api_args = {"token": SYNOPTIC_API_TOKEN, "stid": "KLAX"}  # arguments to pass to the synoptic API
-syn_resp = req.urlopen(syn_api_req_url, syn_api_args)
-syn_json = json.loads(syn_resp)  # convert the synoptic request to a JSON object
-# syn_json = json.loads(req.urlopen(syn_api_req_url, syn_api_args))  # retrieve synoptic response and cast to JSON
+syn_resp = requests.get(syn_api_req_url, params=syn_api_args)
+syn_resp = syn_resp.json()  # despite it being called json(), this returns a dict object
+# syn_json = json.loads(syn_resp)  # convert the synoptic request to a JSON object
+  # retrieve synoptic response and cast to JSON
+print(syn_resp)
+for block in syn_resp:
+    print(block)
 
 # TODO: decompose
 now = datetime.now()  # get current datetime
@@ -50,7 +54,8 @@ osChdir(DATA_TMP_DIR)
     # syn_writer = csv.DictWriter(syn_csv, fieldnames=syn_fieldnames)  # create writer object
     # syn_writer.writeheader()  # write header to the csv file
     # syn_writer.writerows(syn_req_dict)
-syn_df = pd.DataFrame(syn_json)
+# syn_df = pd.DataFrame(syn_json)
+syn_df = pd.DataFrame(syn_resp)
 syn_df.to_csv(syn_csv_filename)
 
 osChdir(WDIR)
