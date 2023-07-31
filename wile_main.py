@@ -35,10 +35,37 @@ import pandas as pd
 SYNOPTIC_API_TOKEN = "eb977b5f24ed48b585ccb4e520906425"
 SYNOPTIC_API_ROOT = "https://api.synopticdata.com/v2/"
 SYNOPTIC_FILTER = "stations/latest"  # TODO: refactor so that this is function argument
-SYNOPTIC_RESPONSE_COLUMNS = ["ELEVATION", "LONGITUDE", "QC_FLAGGED", "LATITUDE"]  # TODO: make this a default that can be changed
+# TODO: make this a default that can be changed
+# TODO: consider finding a way to keep all observation data
+# TODO: check what the difference is between sea level pressure measurement 1 and 1d is, what air temp 1 and 2 is
+SYNOPTIC_RESPONSE_COLUMNS = ["ELEVATION", "LONGITUDE", "QC_FLAGGED", "LATITUDE", "PERIOD_OF_RECORD.start",
+                             "PERIOD_OF_RECORD.end",
+                             # SENSOR_VARIABLES data not included as they appear to just return blank
+                             # "SENSOR_VARIABLES.air_temp.air_temp_value_1.period_of_record.start",
+                             # "SENSOR_VARIABLES.air_temp.air_temp_value_1.period_of_record.end",
+                             # "SENSOR_VARIABLES.air_temp.air_temp_value_2.period_of_record.start",
+                             # "SENSOR_VARIABLES.air_temp.air_temp_value_2.period_of_record.end",
+                             # "SENSOR_VARIABLES.sea_level_pressure.sea_level_pressure_value_1.period_of_record.start",
+                             # "SENSOR_VARIABLES.sea_level_pressure.sea_level_pressure_value_1.period_of_record.end",
+                             # "SENSOR_VARIABLES.dew_point_temperature.dew_point_temperature_value_1.period_of_record.start",
+                             # "SENSOR_VARIABLES.dew_point_temperature.dew_point_temperature_value_1.period_of_record.end",
+                             "OBSERVATIONS.air_temp_value_1.date_time", "OBSERVATIONS.air_temp_value_1.value",
+                             "OBSERVATIONS.air_temp_value_2.date_time", "OBSERVATIONS.air_temp_value_2.value",
+                             "OBSERVATIONS.sea_level_pressure_value_1d.date_time",
+                             "OBSERVATIONS.sea_level_pressure_value_1d.value",
+                             "OBSERVATIONS.sea_level_pressure_value_1.date_time",
+                             "OBSERVATIONS.sea_level_pressure_value_1.value",
+                             "OBSERVATIONS.dew_point_temperature_value_1d.date_time",
+                             "OBSERVATIONS.dew_point_temperature_value_1d.value",
+                             "OBSERVATIONS.dew_point_temperature_value_1.date_time",
+                             "OBSERVATIONS.dew_point_temperature_value_1.value",
+                             "OBSERVATIONS.relative_humidity_value_1.date_time",
+                             "OBSERVATIONS.relative_humidity_value_1.value"]
 syn_api_req_url = osJoin(SYNOPTIC_API_ROOT, SYNOPTIC_FILTER) # URL to request synoptic data
+# TODO: either make two CSVs or two separate requests so that all vars needed to calc dewpoint dep are present together
+# TODO: find out how to measure sustained wind speed. Var to get instantaneous is wind_speed
 syn_api_args = {"state": "CA", "units": "metric,speed|kph,pres|mb", "varsoperator": "or",
-                "vars": "air_temp,sea_level_pressure",
+                "vars": "air_temp,sea_level_pressure,relative_humidity,dew_point_temperature",
                 "token": SYNOPTIC_API_TOKEN}  # arguments to pass to the synoptic API
 syn_resp = requests.get(syn_api_req_url, params=syn_api_args)
 syn_resp = syn_resp.json()  # despite it being called json(), this returns a dict object
@@ -72,5 +99,11 @@ syn_df.to_csv(syn_csv_filename)
 # df2 = pd.read_json()
 df = pd.json_normalize(syn_resp['STATION'])
 df.to_csv("test.csv")
+
+# TODO: calculate dewpoint depression at each station using its measured data
+#       -expect that any station with needed data transmits dewpoint: in this
+#       case we need to extrapolate with what data we can lay hands on.
+#       -
+#       https://iridl.ldeo.columbia.edu/dochelp/QA/Basic/dewpoint.html
 
 osChdir(WDIR)
