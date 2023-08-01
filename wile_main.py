@@ -89,6 +89,9 @@ syn_resp = syn_resp.json()
 syn_hist_df = pd.json_normalize(syn_resp)  # ["STATION", "OBSERVATIONS"]
 chunk_df = syn_hist_df  # this will be used to store each chunk; initialize as a dataframe to save time
 
+# https://stackoverflow.com/a/70639094
+parser = pd.io.parsers.base_parser.ParserBase({'usecols': None})  # this will be used to make sure every response column name is unique
+
 while range_delta > min_delta:
 
     # construct timeseries query
@@ -96,10 +99,19 @@ while range_delta > min_delta:
     syn_hist_args["END"] = chunk_range_end
     syn_resp = requests.get(syn_api_hist_req_url, params=syn_hist_args)  # send query
     syn_resp = syn_resp.json()  # despite it being called json(), this returns a dict object from the requests module
+    chunk_df = pd.json_normalize(syn_resp)  # convert query for this chunk into a dataframe
 
-    syn_hist_filename = "synoptic_historical_" + chunk_range_start + "-" + chunk_range_end + ".csv"
-    syn_hist_df = pd.json_normalize(syn_resp)  # ["STATION", "OBSERVATIONS"]
-    syn_hist_df.to_csv(syn_hist_filename)
+    # merge this chunk into the main historic dataframe
+    # implemented method to do so is by pandas's .concat, but this breaks when a DF has duplicate column names
+    # so we need to first make duplicate columns names chunk_df unique
+    for df in [syn_hist_df, chunk_df]:
+        df.columns = parser._maybe_dedup_names(df.columns)
+
+    # then concatenate the two dataframes
+    # http: // pandas.pydata.org / pandas - docs / stable / reference / api / pandas.concat.html
+    # https://stackoverflow.com/a/28097336
+    # TODO: this appears to sometimes drop data or throw errors. Make more robust.
+    pd.concat([syn_hist_df, chunk_df], axis=0, ignore_index=True)
 
     # update chunk boundaries and distance from next chunk to the earliest date
     chunk_range_end = chunk_range_start
