@@ -4,22 +4,13 @@
 # This file and its ancillaries use the following formatting conventions:
 # GLOBAL_CONSTANTS intended to be used throughout one or multiple files use caps snakecase
 # local_variables use lowercase snakecase
-# classMembers use camelcase
+# classAttributes use camelcase
 
-import os  # TODO: make the directory generation more robust: https://linuxize.com/post/python-get-change-current-working-directory/
-# import wile
-
-# set constants for the main file
-WDIR = os.getcwd()  # current working directory
-DATA_DIR = os.path.join(WDIR, "data")  # where to store data
-DATA_TMP_DIR = os.path.join(DATA_DIR, "tmp")  # where to store temporary and real-time data
-DATA_HIST_DIR = os.path.join(DATA_DIR, "historical")  # where to store historical data sets
-DATA_DERIVED_DIR = os.path.join(DATA_DIR, "derived")  # where to store derived data sets
+import wildfire_probability_estimator
 
 
 
-
-# TODO: this section is WIP data accessing. Decompose into separate modules.
+wpe = wildfire_probability_estimator.wile()  # instantiate class object
 
 # TODO
 # WIFIRE historical sets

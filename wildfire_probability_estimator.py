@@ -6,23 +6,22 @@
 # local_variables use lowercase snakecase
 # classMembers use camelcase
 
+# some efforts are made in this section to only import what is needed so as to reduce overhead
 import requests  # for accessing HTML-formatted and other web data
 from os.path import join as osJoin  # for concatenating strings to make a URL
 from os import chdir as osChdir  # to change directories, such as when working with data
+from os import getcwd as osGetCWD  # retrieves current working directory, TODO: make the directory generation more robust: https://linuxize.com/post/python-get-change-current-working-directory/
 from datetime import datetime, timedelta  # to mark files with the datetime their data was pulled and to iterate across time ranges
 import pandas as pd
 
-#TODO: define these more elegantly
-import os
-WDIR = os.getcwd()  # current working directory
-DATA_DIR = os.path.join(WDIR, "data")  # where to store data
-DATA_TMP_DIR = os.path.join(DATA_DIR, "tmp")  # where to store temporary and real-time data
-DATA_HIST_DIR = os.path.join(DATA_DIR, "historical")  # where to store historical data sets
-DATA_DERIVED_DIR = os.path.join(DATA_DIR, "derived")  # where to store derived data sets
-
-
-# https://api.synopticdata.com/v2/stations/metadata?&state=CA&sensorvars=1&complete=1&token=
-SYNOPTIC_API_TOKEN = "eb977b5f24ed48b585ccb4e520906425"
+# set global constants for this module
+# TODO: define these more elegantly
+WDIR = osGetCWD  # current working directory
+DATA_DIR = osJoin(WDIR, "data")  # where to store data
+DATA_TMP_DIR = osJoin(DATA_DIR, "tmp")  # where to store temporary and real-time data
+DATA_HIST_DIR = osJoin(DATA_DIR, "historical")  # where to store historical data sets
+DATA_DERIVED_DIR = osJoin(DATA_DIR, "derived")  # where to store derived data sets
+SYNOPTIC_API_TOKEN = "eb977b5f24ed48b585ccb4e520906425"  # https://api.synopticdata.com/v2/stations/metadata?&state=CA&sensorvars=1&complete=1&token=
 SYNOPTIC_API_ROOT = "https://api.synopticdata.com/v2/"
 SYN_TIME_FORMAT = "%Y%m%d%H%M"  # format for time specifiers in synoptic API URLs
 SYNOPTIC_RT_FILTER = "stations/latest"  # filter for real-time data TODO: refactor so that this is function argument
@@ -51,6 +50,8 @@ syn_api_rt_req_url = osJoin(SYNOPTIC_API_ROOT, SYNOPTIC_RT_FILTER)  # URL to req
 syn_api_args = {"state": "CA", "units": "metric,speed|kph,pres|mb", "varsoperator": "or",
                    "vars": "air_temp,sea_level_pressure,relative_humidity,dew_point_temperature,soil_temp,precip_accum",
                    "token": SYNOPTIC_API_TOKEN}
+
+
 syn_resp = requests.get(syn_api_rt_req_url, params=syn_api_args)
 syn_resp = syn_resp.json()  # despite it being called json(), this returns a dict object from the requests module
 # syn_json = json.loads(syn_resp)  # convert the synoptic request to a JSON object from the json module
