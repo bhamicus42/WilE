@@ -41,6 +41,25 @@ def setup_new_dir(base_dir, new_dir):
 class wile:
     def __init__(self,
                  token,
+                 syn_api_root="https://api.synopticdata.com/v2/",  # root URL for synoptic API requests
+                 syn_time_format="%Y%m%d%H%M",  # format for time specifiers in synoptic API URLs
+                 syn_rt_filter="stations/latest",  # filter to get real-time data in synoptic API requests
+                 syn_resp_cols=["ELEVATION", "LONGITUDE", "QC_FLAGGED", "LATITUDE", "PERIOD_OF_RECORD.start",  # which normalized columns of the synoptic response to keep
+                                "PERIOD_OF_RECORD.end",                                                        # TODO: find a better way to store this than as mutable default arg
+                                "OBSERVATIONS.air_temp_value_1.date_time",
+                                "OBSERVATIONS.air_temp_value_1.value",
+                                "OBSERVATIONS.air_temp_value_2.date_time",
+                                "OBSERVATIONS.air_temp_value_2.value",
+                                "OBSERVATIONS.sea_level_pressure_value_1d.date_time",
+                                "OBSERVATIONS.sea_level_pressure_value_1d.value",
+                                "OBSERVATIONS.sea_level_pressure_value_1.date_time",
+                                "OBSERVATIONS.sea_level_pressure_value_1.value",
+                                "OBSERVATIONS.dew_point_temperature_value_1d.date_time",
+                                "OBSERVATIONS.dew_point_temperature_value_1d.value",
+                                "OBSERVATIONS.dew_point_temperature_value_1.date_time",
+                                "OBSERVATIONS.dew_point_temperature_value_1.value",
+                                "OBSERVATIONS.relative_humidity_value_1.date_time",
+                                "OBSERVATIONS.relative_humidity_value_1.value"],
                  logger_level=20,
                  logname="output_log.txt",
                  logger_formatter_string="%(asctime)s:%(funcName)s:%(message)s",
@@ -49,7 +68,7 @@ class wile:
 
         # set global constants for this class
         self.CALLER_DIR = sys_path[0]  # location of the file calling/running this code
-        self.DATA_DIR = setup_new_dir(self.script_dir, "data")  # location of data for use
+        self.DATA_DIR = setup_new_dir(self.CALLER_DIR, "data")  # location of data for use
         self.DATA_RT_DIR = setup_new_dir(self.DATA_DIR, "rt")  # where to store "realtime" data, that is, the last
                                                               # available measurements for variables of interest
         self.DATA_HIST_DIR = setup_new_dir(self.DATA_DIR, "hist")  # where to store historical data sets
@@ -58,41 +77,19 @@ class wile:
                                                                           # before being removed, it lives here while
                                                                           # it exists.
         self.OUTPUT_DIR = setup_new_dir(self.DATA_DIR, "outputs")  # location of any output files
-
-       
-        # self.CALLER_DIR = os.getcwd()  # current working directory
-        self.logger.debug(self.CALLER_DIR)
-        # self.DATA_DIR = os.path.join(self.CALLER_DIR, "data")  # where to store data
-        # self.DATA_TMP_DIR = os.path.join(self.DATA_DIR, "tmp")  # where to store temporary and real-time data
-        # self.DATA_HIST_DIR = os.path.join(self.DATA_DIR, "historical")  # where to store historical data sets
-        # self.DATA_DERIVED_DIR = os.path.join(self.DATA_DIR, "derived")  # where to store derived data sets
-        # TODO: I'm not sure if this is the best place
         self.SYNOPTIC_API_TOKEN = token
-        self.SYNOPTIC_API_ROOT = "https://api.synopticdata.com/v2/"
-        self.SYN_TIME_FORMAT = "%Y%m%d%H%M"  # format for time specifiers in synoptic API URLs
-        self.SYNOPTIC_RT_FILTER = "stations/latest"  # filter for real-time data
+        self.SYNOPTIC_API_ROOT = syn_api_root  # this is unlikely to change anytime soon but I figured I should make it
+                                               # easily changable just in case
+        self.SYN_TIME_FORMAT = syn_time_format  # ditto
+        self.SYNOPTIC_RT_FILTER = syn_rt_filter  # ditto x2
 
-                                                     # TODO: consider refactoring so that this is function argument
+        self.logger.debug(self.CALLER_DIR)
+
         # this const specifies which columns of the synoptic response to keep
         # TODO: make this a default that can be changed
         # TODO: consider finding a way to keep all observation data
         # TODO: check what the difference is between sea level pressure measurement 1 and 1d is, what air temp 1 and 2 is
-        self.SYNOPTIC_RESPONSE_COLUMNS = ["ELEVATION", "LONGITUDE", "QC_FLAGGED", "LATITUDE", "PERIOD_OF_RECORD.start",
-                                          "PERIOD_OF_RECORD.end",
-                                          "OBSERVATIONS.air_temp_value_1.date_time",
-                                          "OBSERVATIONS.air_temp_value_1.value",
-                                          "OBSERVATIONS.air_temp_value_2.date_time",
-                                          "OBSERVATIONS.air_temp_value_2.value",
-                                          "OBSERVATIONS.sea_level_pressure_value_1d.date_time",
-                                          "OBSERVATIONS.sea_level_pressure_value_1d.value",
-                                          "OBSERVATIONS.sea_level_pressure_value_1.date_time",
-                                          "OBSERVATIONS.sea_level_pressure_value_1.value",
-                                          "OBSERVATIONS.dew_point_temperature_value_1d.date_time",
-                                          "OBSERVATIONS.dew_point_temperature_value_1d.value",
-                                          "OBSERVATIONS.dew_point_temperature_value_1.date_time",
-                                          "OBSERVATIONS.dew_point_temperature_value_1.value",
-                                          "OBSERVATIONS.relative_humidity_value_1.date_time",
-                                          "OBSERVATIONS.relative_humidity_value_1.value"]
+        self.SYNOPTIC_RESPONSE_COLUMNS = syn_resp_cols
 
         # logging shenanigans. This section sets up a logger for the wile object to keep track of what goes on.
         self.logname = logname  # name of the .txt file to save log output.
@@ -126,7 +123,7 @@ class wile:
 
         def pull():
             # pull data from API system
-            self.logger.debug("under construction")
+            self.logger.debug("pull() was called")
 
             def everything():
                 # pull all data sources, including updating historical set
@@ -173,13 +170,88 @@ class wile:
                         # now_str = now.strftime("%m.%d.%Y_%H.%M.%S")  # convert the datetime to a string
                         # syn_csv_filename = "synoptic_request_csv_" + now_str + ".csv"  #
                         syn_csv_filename = "synoptic_rt_request.csv"
-                        os.chdir(DATA_TMP_DIR)
+                        os.chdir(self.DATA_TMP_DIR)
                         syn_df.to_csv(syn_csv_filename)
 
             def historic():
                 # pull historic data
-                self.logger.debug("under construction")
+                self.logger.debug("historic() was called")
 
                 def synoptic():
+                    # TODO
                     # pull synoptic data as far back as arg
-                    self.logger.debug("under construction")
+                    self.logger.debug("historic.synoptic() was called")
+
+                    SYNOPTIC_HIST_FILTER = "stations/timeseries"  # filter for timeseries data TODO: refactor so that this is function argument
+                    # SYN_HIST_START = "199001010000"  # earliest time to seek to is 1990/01/01, 00:00. Most data will be nowhere near that.
+                    SYN_HIST_START = "202001010000"  # earliest time to seek to is 2020/01/01, 00:00. Most data will be nowhere near that.
+
+                    # TODO: these might need to be args
+                    syn_api_args = {"state": "CA", "units": "metric,speed|kph,pres|mb", "varsoperator": "or",
+                                    "vars": "air_temp,sea_level_pressure,relative_humidity,dew_point_temperature,soil_temp,precip_accum",
+                                    "token": self.token}  # TODO: this might need to go someplace else
+                    syn_hist_end = datetime.now().strftime(self.SYN_TIME_FORMAT)  # string giving current datetime; pull up to the absolute most recent data
+                    syn_api_hist_req_url = os.join(self.SYNOPTIC_API_ROOT, self.SYNOPTIC_HIST_FILTER)  # URL to request synoptic data
+                    syn_hist_args = syn_api_args
+
+                    os.chdir(self.DATA_HIST_DIR)
+
+                    # Requesting all recorded timeseries for CA is too much at once. Instead, request timeseries in day-long chunks.
+                    # This uses the datetime module to create 2 datetime objects that will outline each chunk.
+                    chunk_range_end = syn_hist_end  # string; first end of range should be datetime.now()
+                    chunk_end_dt = datetime.strptime(chunk_range_end, self.SYN_TIME_FORMAT)  # datetime object giving the end of the chunk timerange
+                    chunk_end_dt -= timedelta(days=1)  # run back 1 day
+                    chunk_range_start = chunk_end_dt.strftime(self.SYN_TIME_FORMAT)  # datetime object giving the start of the chunk timerange
+                    chunk_start_dt = datetime.strptime(chunk_range_start, self.SYN_TIME_FORMAT)  # string; 1 day before chunk_range_end
+
+                    start_dt = datetime.strptime(SYN_HIST_START, self.SYN_TIME_FORMAT)  # datetime giving the very earliest date to seek to
+                    range_delta = chunk_end_dt - start_dt  # time difference in complete target range
+                    min_delta = timedelta(days=1)  # set minimum distance between the current chunk and the earliest date
+
+                    syn_resp = requests.get(syn_api_hist_req_url, params=syn_hist_args)
+                    syn_resp = syn_resp.json()
+                    syn_hist_df = pd.json_normalize(syn_resp)  # ["STATION", "OBSERVATIONS"]
+                    chunk_df = syn_hist_df  # this will be used to store each chunk; initialize as a dataframe to save time
+
+                    # https://stackoverflow.com/a/70639094
+                    parser = pd.io.parsers.base_parser.ParserBase(
+                        {'usecols': None})  # this will be used to make sure every response column name is unique
+
+                    while range_delta > min_delta:
+
+                        # construct timeseries query
+                        syn_hist_args["START"] = chunk_range_start
+                        syn_hist_args["END"] = chunk_range_end
+                        syn_resp = requests.get(syn_api_hist_req_url, params=syn_hist_args)  # send query
+                        syn_resp = syn_resp.json()  # despite it being called json(), this returns a dict object from the requests module
+                        chunk_df = pd.json_normalize(syn_resp)  # convert query for this chunk into a dataframe
+
+                        # merge this chunk into the main synoptic historic dataframe
+                        # implemented method to do so is by pandas's .concat, but this breaks when a DF has duplicate column names
+                        # so we need to first make duplicate columns names chunk_df unique ("deduplicate")
+                        for df in [syn_hist_df, chunk_df]:
+                            df.columns = parser._maybe_dedup_names(df.columns)
+
+                        # then concatenate the two dataframes
+                        # http: // pandas.pydata.org / pandas - docs / stable / reference / api / pandas.concat.html
+                        # https://stackoverflow.com/a/28097336
+                        # TODO: this appears to sometimes drop data or throw errors. Make more robust.
+                        pd.concat([syn_hist_df, chunk_df], axis=0, ignore_index=True)
+
+                        # update chunk boundaries and distance from next chunk to the earliest date
+                        chunk_range_end = chunk_range_start
+                        chunk_end_dt = datetime.strptime(chunk_range_end, SYN_TIME_FORMAT)  # temporary datetime object of the chunk range end
+                        chunk_end_dt -= timedelta(days=1)  # run back one day
+                        chunk_range_start = chunk_end_dt.strftime(SYN_TIME_FORMAT)
+                        range_delta = chunk_end_dt - start_dt
+
+                    print("start = {}, \nend = {}\n\n".format(chunk_range_start, chunk_range_end))
+
+                    now = datetime.now()  # get current datetime
+                    now_str = now.strftime("%m.%d.%Y_%H.%M.%S")  # convert the datetime to a string
+                    syn_hist_filename = "synoptic_historical_retrieved_" + now_str + ".csv"
+                    syn_hist_df.to_csv(syn_hist_filename)
+
+                    print("saved historical measurements to csv")
+
+                    os.chdir(self.CALLER_DIR)
