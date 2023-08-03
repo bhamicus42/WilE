@@ -8,9 +8,9 @@
 
 import wildfire_probability_estimator
 
+token = "eb977b5f24ed48b585ccb4e520906425"  # https://api.synopticdata.com/v2/stations/metadata?&state=CA&sensorvars=1&complete=1&token=
 
-
-wpe = wildfire_probability_estimator.wile()  # instantiate class object
+wpe = wildfire_probability_estimator.wile(token)  # instantiate class object
 
 # TODO
 # WIFIRE historical sets
