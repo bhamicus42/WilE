@@ -61,6 +61,7 @@ class wile:
                                 "OBSERVATIONS.dew_point_temperature_value_1.value",
                                 "OBSERVATIONS.relative_humidity_value_1.date_time",
                                 "OBSERVATIONS.relative_humidity_value_1.value"],
+                 auto_clean=True,  # whether to automatically clean data according to preprogrammed parameters
                  logger_level=20,
                  logname="output_log.txt",
                  logger_formatter_string="%(asctime)s:%(funcName)s:%(message)s",
@@ -89,6 +90,8 @@ class wile:
         # TODO: consider finding a way to keep all observation data
         # TODO: check what the difference is between sea level pressure measurement 1 and 1d is, what air temp 1 and 2 is
         self.SYNOPTIC_RESPONSE_COLUMNS = syn_resp_cols
+
+        self.AUTO_CLEAN = auto_clean
 
         # logging shenanigans. This section sets up a logger for the wile object to keep track of what goes on.
         self.logname = logname  # name of the .txt file to save log output.
@@ -122,6 +125,38 @@ class wile:
 
 
 
+    def syn_format(self, syn_resp#, keep
+                    ):
+        # clean data
+        # TODO: generalize variable names
+        # TODO: need to be able to pass variable number of keeps
+        # TODO: calculate dewpoint depression at each station using its measured data
+        #       I expect that any station with needed data transmits dewpoint: in this
+        #       case we need to extrapolate with what data we can lay hands on.
+        #       https://iridl.ldeo.columbia.edu/dochelp/QA/Basic/dewpoint.html
+        syn_df = pd.json_normalize(syn_resp['STATION'])
+        if self.AUTO_CLEAN:
+            syn_df = syn_df[syn_df.QC_FLAGGED != "TRUE"]  # this removes any row that was flagged for
+            # quality control
+            syn_df = syn_df[self.SYNOPTIC_RESPONSE_COLUMNS]  # this removes all columns except the ones in
+            # SYNOPTIC_RESPONSE_COLUMNS
+        return syn_df
+
+    # def syn_format(self, syn_resp, keep1, keep2):
+    #     # clean data
+    #     # TODO: generalize variable names
+    #     # TODO: calculate dewpoint depression at each station using its measured data
+    #     #       I expect that any station with needed data transmits dewpoint: in this
+    #     #       case we need to extrapolate with what data we can lay hands on.
+    #     #       https://iridl.ldeo.columbia.edu/dochelp/QA/Basic/dewpoint.html
+    #     syn_df = pd.json_normalize(syn_resp[keep1, keep2])
+    #     if self.AUTO_CLEAN:
+    #         syn_df = syn_df[syn_df.QC_FLAGGED != "TRUE"]  # this removes any row that was flagged for
+    #         # quality control
+    #         syn_df = syn_df[self.SYNOPTIC_RESPONSE_COLUMNS]  # this removes all columns except the ones in
+    #         # SYNOPTIC_RESPONSE_COLUMNS
+    #     return syn_df
+
     def pull_everything(self):
         # pull all data sources, including updating historical set
         self.logger.info("Pulling data from ALL built-in sources. Historical data being updated.\n",
@@ -147,18 +182,7 @@ class wile:
         syn_resp = syn_resp.json()  # despite it being called json(), this returns a dict object from the requests module
         # syn_json = json.loads(syn_resp)  # convert the synoptic request to a JSON object from the json module
 
-        # clean data
-        # TODO: consider decomposing
-        # TODO: calculate dewpoint depression at each station using its measured data
-        #       I expect that any station with needed data transmits dewpoint: in this
-        #       case we need to extrapolate with what data we can lay hands on.
-        #       https://iridl.ldeo.columbia.edu/dochelp/QA/Basic/dewpoint.html
-        syn_df = pd.json_normalize(syn_resp['STATION'])
-        if auto_clean:
-            syn_df = syn_df[syn_df.QC_FLAGGED != "TRUE"]  # this removes any row that was flagged for
-                                                          # quality control
-            syn_df = syn_df[self.SYNOPTIC_RESPONSE_COLUMNS]  # this removes all columns except the ones in
-                                                             # SYNOPTIC_RESPONSE_COLUMNS
+        syn_df = self.syn_format(syn_resp, 'STATION')
 
         # write the synoptic request to a CSV file
         if write:
@@ -183,7 +207,7 @@ class wile:
 
         SYNOPTIC_HIST_FILTER = "stations/timeseries"  # filter for timeseries data TODO: refactor so that this is function argument
         # SYN_HIST_START = "199001010000"  # earliest time to seek to is 1990/01/01, 00:00. Most data will be nowhere near that.
-        SYN_HIST_START = "202308040000"
+        SYN_HIST_START = "202308050000"
 
         # TODO: these might need to be function args
         syn_api_args = {"state": "CA", "units": "metric,speed|kph,pres|mb", "varsoperator": "or",
@@ -209,7 +233,10 @@ class wile:
         syn_hist_args["END"] = chunk_range_end
         syn_resp = requests.get(syn_api_hist_req_url, params=syn_hist_args)
         syn_resp = syn_resp.json()
-        syn_hist_df = pd.json_normalize(syn_resp)  # ["STATION", "OBSERVATIONS"]
+        # syn_hist_df = pd.json_normalize(syn_resp)  # ["STATION", "OBSERVATIONS"]
+        # syn_hist_df = self.syn_format(syn_resp, "STATION", "OBSERVATIONS")
+        # syn_hist_df = self.syn_format(syn_resp, "STATION")
+        syn_hist_df = self.syn_format(syn_resp)
         chunk_df = syn_hist_df  # this will be used to store each chunk; initialize as a dataframe to save time
 
         # https://stackoverflow.com/a/70639094
@@ -228,7 +255,9 @@ class wile:
             syn_hist_args["END"] = chunk_range_end
             syn_resp = requests.get(syn_api_hist_req_url, params=syn_hist_args)  # send query
             syn_resp = syn_resp.json()  # despite it being called json(), this returns a dict object from the requests module
-            chunk_df = pd.json_normalize(syn_resp)  # convert query for this chunk into a dataframe
+            # chunk_df = self.syn_format(syn_resp, "STATION", "OBSERVATIONS")  # convert query for this chunk into a dataframe
+            # chunk_df = self.syn_format(syn_resp, "STATION")  # convert query for this chunk into a dataframe
+            chunk_df = self.syn_format(syn_resp)  # convert query for this chunk into a dataframe
 
             # if self.logger.level == 10:  # if set to debug print synoptic args
             #     for line in syn_hist_args:
@@ -253,8 +282,8 @@ class wile:
             chunk_range_start = chunk_end_dt.strftime(self.SYN_TIME_FORMAT)
             range_delta = chunk_end_dt - start_dt
 
-            self.logger.debug("iteration end: chunk start={}, chunk end={}".format(chunk_range_start,
-                                                                                   chunk_range_end))
+            # self.logger.debug("iteration end: chunk start={}, chunk end={}".format(chunk_range_start,
+            #                                                                        chunk_range_end))
             self.logger.debug("syn_hist_df is {}kb".format(sys_getsizeof(syn_hist_df)/1000))
 
         os.chdir(self.DATA_HIST_DIR)
