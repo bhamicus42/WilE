@@ -72,7 +72,7 @@ class wile:
         self.CALLER_DIR = sys_path[0]  # location of the file calling/running this code
         self.DATA_DIR = setup_new_dir(self.CALLER_DIR, "data")  # location of data for use
         self.DATA_RT_DIR = setup_new_dir(self.DATA_DIR, "rt")  # where to store "realtime" data, that is, the last
-                                                              # available measurements for variables of interest
+                                                               # available measurements for variables of interest
         self.DATA_HIST_DIR = setup_new_dir(self.DATA_DIR, "hist")  # where to store historical data sets
         self.DATA_DERIVED_DIR = setup_new_dir(self.DATA_DIR, "derived")  # where to store derived data sets
         self.DATA_TMP_DIR = setup_new_dir(self.DATA_DIR, "tmp")  # if a file needs to be temporarily created
@@ -125,22 +125,22 @@ class wile:
 
 
 
-    def syn_format(self, syn_resp#, keep
-                    ):
-        # clean data
-        # TODO: generalize variable names
-        # TODO: need to be able to pass variable number of keeps
-        # TODO: calculate dewpoint depression at each station using its measured data
-        #       I expect that any station with needed data transmits dewpoint: in this
-        #       case we need to extrapolate with what data we can lay hands on.
-        #       https://iridl.ldeo.columbia.edu/dochelp/QA/Basic/dewpoint.html
-        syn_df = pd.json_normalize(syn_resp['STATION'])
-        if self.AUTO_CLEAN:
-            syn_df = syn_df[syn_df.QC_FLAGGED != "TRUE"]  # this removes any row that was flagged for
-            # quality control
-            syn_df = syn_df[self.SYNOPTIC_RESPONSE_COLUMNS]  # this removes all columns except the ones in
-            # SYNOPTIC_RESPONSE_COLUMNS
-        return syn_df
+    # def syn_format(self, syn_resp#, keep
+    #                 ):
+    #     # clean data
+    #     # TODO: generalize variable names
+    #     # TODO: need to be able to pass variable number of keeps
+    #     # TODO: calculate dewpoint depression at each station using its measured data
+    #     #       I expect that any station with needed data transmits dewpoint: in this
+    #     #       case we need to extrapolate with what data we can lay hands on.
+    #     #       https://iridl.ldeo.columbia.edu/dochelp/QA/Basic/dewpoint.html
+    #     syn_df = pd.json_normalize(syn_resp['STATION'])
+    #     if self.AUTO_CLEAN:
+    #         syn_df = syn_df[syn_df.QC_FLAGGED != "TRUE"]  # this removes any row that was flagged for
+    #                                                       # quality control
+    #         syn_df = syn_df[self.SYNOPTIC_RESPONSE_COLUMNS]  # this removes all columns except the ones in
+    #                                                          # SYNOPTIC_RESPONSE_COLUMNS
+    #     return syn_df
 
     # def syn_format(self, syn_resp, keep1, keep2):
     #     # clean data
@@ -160,14 +160,14 @@ class wile:
     def pull_everything(self):
         # pull all data sources, including updating historical set
         self.logger.info("Pulling data from ALL built-in sources. Historical data being updated.\n",
-                         "This may take awhile!")
+                         "This may take several hours!")
 
     def pull_realtimet(self):
         # pull realtime data
         self.logger.debug("Pulling realtime data.")
 
     def pull_synoptic_rt(self, auto_clean=True, write=True):
-        self.logger.info("Pulling synoptic weather data.")
+        self.logger.info("Pulling latest synoptic weather data.")
         self.logger.debug("Auto_clean = {} and write = {}".format(auto_clean, write))
 
         syn_api_rt_req_url = os.path.join(self.SYNOPTIC_API_ROOT, self.SYNOPTIC_RT_FILTER)  # URL to request synoptic data
@@ -182,7 +182,14 @@ class wile:
         syn_resp = syn_resp.json()  # despite it being called json(), this returns a dict object from the requests module
         # syn_json = json.loads(syn_resp)  # convert the synoptic request to a JSON object from the json module
 
-        syn_df = self.syn_format(syn_resp, 'STATION')
+        # syn_df = self.syn_format(syn_resp, 'STATION')
+
+        syn_df = pd.json_normalize(syn_resp['STATION'])
+        if self.AUTO_CLEAN:
+            syn_df = syn_df[syn_df.QC_FLAGGED != "TRUE"]  # this removes any row that was flagged for
+                                                          # quality control
+            syn_df = syn_df[self.SYNOPTIC_RESPONSE_COLUMNS]  # this removes all columns except the ones in
+                                                             # SYNOPTIC_RESPONSE_COLUMNS
 
         # write the synoptic request to a CSV file
         if write:
@@ -193,17 +200,25 @@ class wile:
             # now_str = now.strftime("%m.%d.%Y_%H.%M.%S")  # convert the datetime to a string
             # syn_csv_filename = "synoptic_request_csv_" + now_str + ".csv"  #
             syn_csv_filename = "synoptic_rt_request.csv"
-            os.chdir(self.DATA_TMP_DIR)
+            os.chdir(self.DATA_RT_DIR)
             syn_df.to_csv(syn_csv_filename)
+            self.logger.info("Wrote latest synoptic data response to CSV file")
+
+            if self.logger.level == 10:  # if set to debug, open the historic csv to be sure it was retrieved properly
+                os.startfile(os.path.join(os.getcwd(), syn_csv_filename))
+            os.chdir(self.CALLER_DIR)
+
 
     def pull_historic(self):
         # pull historic data
-        self.logger.debug("historic() was called")
+        self.logger.debug("pull_historic() was called")
 
     def pull_synoptic_hist(self):
         # TODO
         # pull synoptic data as far back as arg
-        self.logger.debug("pulling synoptic timeseries data")
+        self.logger.debug("pulling synoptic timeseries data \n" +
+                          "NOTE: this function isn't complete and doesn't work yet! \n" +
+                          "WARNING: it may take up to several hours to fulfill a timeseries request!")
 
         SYNOPTIC_HIST_FILTER = "stations/timeseries"  # filter for timeseries data TODO: refactor so that this is function argument
         # SYN_HIST_START = "199001010000"  # earliest time to seek to is 1990/01/01, 00:00. Most data will be nowhere near that.

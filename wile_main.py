@@ -12,7 +12,9 @@ TOKEN = "eb977b5f24ed48b585ccb4e520906425"  # https://api.synopticdata.com/v2/st
 
 wpe = wildfire_probability_estimator.wile(TOKEN, logger_level=10)  # instantiate class object
 
-wpe.pull_synoptic_hist()
+# wpe.pull_synoptic_hist()
+
+wpe.pull_synoptic_rt()
 
 # TODO
 # WIFIRE historical sets

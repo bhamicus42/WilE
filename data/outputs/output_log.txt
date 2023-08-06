@@ -1,4 +1,6 @@
-2023-08-05 10:44:16,373:__init__:C:\g\WilE
-2023-08-05 10:44:16,373:__init__:beep beep settin up the tootle toot:
+2023-08-06 10:25:43,054:__init__:C:\g\WilE
+2023-08-06 10:25:43,058:__init__:beep beep settin up the tootle toot:
 wile object instantiated
-2023-08-05 10:44:16,373:pull_synoptic_hist:pulling synoptic timeseries data
+2023-08-06 10:25:43,058:pull_synoptic_rt:Pulling latest synoptic weather data.
+2023-08-06 10:25:43,058:pull_synoptic_rt:Auto_clean = True and write = True
+2023-08-06 10:25:47,235:pull_synoptic_rt:Wrote latest synoptic data response to CSV file
