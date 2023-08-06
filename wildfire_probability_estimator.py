@@ -221,8 +221,16 @@ class wile:
                           "WARNING: it may take up to several hours to fulfill a timeseries request!")
 
         SYNOPTIC_HIST_FILTER = "stations/timeseries"  # filter for timeseries data TODO: refactor so that this is function argument
-        # SYN_HIST_START = "199001010000"  # earliest time to seek to is 1990/01/01, 00:00. Most data will be nowhere near that.
-        SYN_HIST_START = "202308050000"
+        SYN_HIST_START = ""  # define outside the if statement so it stays in scope throughout this func
+        if self.logger.level == 10:  # if logging level set to debug, only retrieve a little historic data
+            syn_hist_start_dt = datetime.now()
+            syn_hist_start_dt -= timedelta(hours=3)  # only go back three hours from now
+            SYN_HIST_START = syn_hist_start_dt.strftime(self.SYN_TIME_FORMAT)
+        else:  # otherwise go waaaay back
+            SYN_HIST_START = "199001010000"  # earliest time to seek to is 1990/01/01, 00:00.
+                                             # Most data will be nowhere near that.
+                                             # TODO: make this function arg.
+
 
         # TODO: these might need to be function args
         syn_api_args = {"state": "CA", "units": "metric,speed|kph,pres|mb", "varsoperator": "or",
@@ -247,11 +255,13 @@ class wile:
         syn_hist_args["START"] = chunk_range_start
         syn_hist_args["END"] = chunk_range_end
         syn_resp = requests.get(syn_api_hist_req_url, params=syn_hist_args)
-        syn_resp = syn_resp.json()
-        # syn_hist_df = pd.json_normalize(syn_resp)  # ["STATION", "OBSERVATIONS"]
-        # syn_hist_df = self.syn_format(syn_resp, "STATION", "OBSERVATIONS")
-        # syn_hist_df = self.syn_format(syn_resp, "STATION")
-        syn_hist_df = self.syn_format(syn_resp)
+        syn_resp = syn_resp.json()  # convert to dict of dicts
+
+        # pare down the response so that it only contains some of the original data
+        # https://stackoverflow.com/questions/3420122/filter-dict-to-contain-only-certain-keys
+        # Throws a KeyError if one of the filer keys is not present in old_dict. I would suggest {k:d[k] for k in filter if k in d}
+        # syn_resp = {key: syn_resp[key] for key in ["STATION", "OBSERVATIONS"]}
+        syn_hist_df = pd.json_normalize(syn_resp)
         chunk_df = syn_hist_df  # this will be used to store each chunk; initialize as a dataframe to save time
 
         # https://stackoverflow.com/a/70639094
@@ -262,21 +272,20 @@ class wile:
 
         while range_delta > min_delta:
 
-            self.logger.debug("iteration start: chunk start={}, chunk end={}".format(chunk_range_start,
-                                                                                     chunk_range_end))
+            self.logger.debug("iterating: chunk start={}, chunk end={}".format(chunk_range_start,
+                                                                               chunk_range_end))
 
             # construct timeseries query
             syn_hist_args["START"] = chunk_range_start
             syn_hist_args["END"] = chunk_range_end
             syn_resp = requests.get(syn_api_hist_req_url, params=syn_hist_args)  # send query
             syn_resp = syn_resp.json()  # despite it being called json(), this returns a dict object from the requests module
-            # chunk_df = self.syn_format(syn_resp, "STATION", "OBSERVATIONS")  # convert query for this chunk into a dataframe
+            # TODO: consider changing this so that it just concatenates JSONs and then
+            # TODO: cast as JSON object and visualize; I'm missing something about how synoptic responds for
+            #       timeseries; it's not the same as with latest
+            chunk_df = pd.json_normalize(syn_resp)
             # chunk_df = self.syn_format(syn_resp, "STATION")  # convert query for this chunk into a dataframe
-            chunk_df = self.syn_format(syn_resp)  # convert query for this chunk into a dataframe
 
-            # if self.logger.level == 10:  # if set to debug print synoptic args
-            #     for line in syn_hist_args:
-            #         self.logger.debug(line)
 
             # merge this chunk into the main synoptic historic dataframe
             # implemented method to do so is by pandas's .concat, but this breaks when a DF has duplicate column names

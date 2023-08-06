@@ -1,6 +1,15 @@
-2023-08-06 10:25:43,054:__init__:C:\g\WilE
-2023-08-06 10:25:43,058:__init__:beep beep settin up the tootle toot:
+2023-08-06 10:52:10,269:__init__:C:\g\WilE
+2023-08-06 10:52:10,269:__init__:beep beep settin up the tootle toot:
 wile object instantiated
-2023-08-06 10:25:43,058:pull_synoptic_rt:Pulling latest synoptic weather data.
-2023-08-06 10:25:43,058:pull_synoptic_rt:Auto_clean = True and write = True
-2023-08-06 10:25:47,235:pull_synoptic_rt:Wrote latest synoptic data response to CSV file
+2023-08-06 10:52:10,273:pull_synoptic_hist:pulling synoptic timeseries data 
+NOTE: this function isn't complete and doesn't work yet! 
+WARNING: it may take up to several hours to fulfill a timeseries request!
+2023-08-06 10:52:21,448:pull_synoptic_hist:start=202308060752, end=202308061052 
+
+beginning while loop:
+2023-08-06 10:52:21,448:pull_synoptic_hist:iteration start: chunk start=202308060952, chunk end=202308061052
+2023-08-06 10:52:30,697:pull_synoptic_hist:syn_hist_df is 54.538kb
+2023-08-06 10:52:31,069:pull_synoptic_hist:saved historical measurements to csv
+filename = synoptic_historical_retrieved_08.06.2023_10.52.30.csv
+path = C:\g\WilE\data\hist
+
