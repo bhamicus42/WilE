@@ -1,0 +1,14 @@
+2023-08-12 13:46:56,418:__init__:C:\g\WilE
+2023-08-12 13:46:56,418:__init__:beep beep settin up the tootle toot:
+wile object instantiated
+2023-08-12 13:46:56,418:pull_synoptic_hist:pulling synoptic timeseries data 
+NOTE: this function isn't complete and doesn't work yet! 
+WARNING: it may take up to several hours to fulfill a timeseries request!
+2023-08-12 13:47:05,318:pull_synoptic_hist:start=202308121046, end=202308121346 
+
+beginning while loop:
+2023-08-12 13:47:05,318:pull_synoptic_hist:iterating: chunk start=202308121246, chunk end=202308121346
+2023-08-12 13:47:20,439:pull_synoptic_hist:saved historical measurements to csv
+filename = synoptic_historical_retrieved_08.12.2023_13.47.17.csv
+path = C:\g\WilE\data\hist
+
