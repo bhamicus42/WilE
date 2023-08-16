@@ -20,9 +20,8 @@ from sys import path as sys_path
 from datetime import datetime, timedelta  # to mark files with the datetime their data was pulled and to iterate across time ranges
 import pandas as pd
 
-import json  # temporary
-from tsgettoolbox import ldas  # experimental
-
+# import json  # temporary
+import wile_ldas as wldas
 
 
 def setup_new_dir(base_dir, new_dir):
@@ -138,9 +137,9 @@ class wile:
         self.logger.info("Pulling data from ALL built-in sources. Historical data being updated.\n",
                          "This may take several hours!")
 
-    def pull_realtimet(self):
+    def pull_rt(self):
         # pull realtime data
-        self.logger.debug("pull_realtime was called. This is still under construction!")
+        self.logger.debug("pull_rt was called. This is still under construction!")
 
     def pull_synoptic_rt(self, auto_clean=True, write=True):
         self.logger.info("Pulling latest synoptic weather data.")
@@ -177,6 +176,13 @@ class wile:
             if self.logger.level == 10:  # if set to debug, open the historic csv to be sure it was retrieved properly
                 os.startfile(os.path.join(os.getcwd(), syn_csv_filename))
             os.chdir(self.CALLER_DIR)
+
+    def pull_ldas_rt(self):
+        """
+
+        :return:
+        """
+        self.logger.info("Pulling realtime LDAS data.")
 
 
     def pull_historic(self):
