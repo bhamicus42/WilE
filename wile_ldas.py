@@ -8,16 +8,20 @@ import certifi
 import requests
 from time import sleep
 
+# TODO: get this from a text file
+EARTHDATA_USERNAME = 'Eshreth_of_Athshe'
+EARTHDATA_PASSWORD = 'SONOlu4mi__._ne8scence'
+
 # This method POSTs formatted JSON WSP requests to the GES DISC endpoint URL and returns the response
 def get_http_data(request):
-    # hdrs = {'Content-Type': 'application/json',
-    #         'Accept'      : 'application/json'}
+
     hdrs = urllib3.make_headers(basic_auth='Eshreth_of_Athshe:SONOlu4mi__._ne8scence')
-    hdrs.add('Content-Type', 'application/json')
-    hdrs.add('Accept', 'application/json')
+    hdrs['Content-Type'] = 'application/json'
+    hdrs['Accept'] = 'application/json'
     data = json.dumps(request)
     r = http.request('POST', svcurl, body=data, headers=hdrs)
     response = json.loads(r.data)
+    
     # Check for errors
     if response['type'] == 'jsonwsp/fault' :
         print('API Error: faulty request')
