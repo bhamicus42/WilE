@@ -4,13 +4,17 @@ import sys
 import json
 import urllib3
 import certifi
+# import configparser
 import requests
 from time import sleep
 
 # This method POSTs formatted JSON WSP requests to the GES DISC endpoint URL and returns the response
 def get_http_data(request):
-    hdrs = {'Content-Type': 'application/json',
-            'Accept'      : 'application/json'}
+    # hdrs = {'Content-Type': 'application/json',
+    #         'Accept'      : 'application/json'}
+    hdrs = urllib3.make_headers(basic_auth='Eshreth_of_Athshe:SONOlu4mi__._ne8scence')
+    hdrs.add('Content-Type', 'application/json')
+    hdrs.add('Accept', 'application/json')
     data = json.dumps(request)
     r = http.request('POST', svcurl, body=data, headers=hdrs)
     response = json.loads(r.data)
@@ -20,9 +24,11 @@ def get_http_data(request):
     return response
 
 
-
+# consider pulling from a file outside the repository
+# TODO: reference https://stackoverflow.com/questions/48497566/401-client-error-unauthorized-for-url
 # Create a urllib PoolManager instance to make requests.
-http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',ca_certs=certifi.where())
+http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
+                           ca_certs=certifi.where())
 
 # Set the URL for the GES DISC subset service endpoint
 svcurl = 'https://disc.gsfc.nasa.gov/service/subset/jsonwsp'
