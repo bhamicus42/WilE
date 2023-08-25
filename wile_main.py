@@ -13,3 +13,4 @@ SYN_TOKEN = "eb977b5f24ed48b585ccb4e520906425"  # https://api.synopticdata.com/v
 wpe = wildfire_probability_estimator.wile(SYN_TOKEN, logger_level=10)  # instantiate class object; logger level 10 means debug
 
 wpe.pull_ldas_rt()
+
