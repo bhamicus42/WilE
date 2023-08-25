@@ -8,9 +8,49 @@ import certifi
 import requests
 from time import sleep
 
+from subprocess import Popen
+from getpass import getpass
+import platform
+import os
+import shutil
+
+print("Import complete. Beginning prompts.")
+
 # TODO: get this from a text file
 EARTHDATA_USERNAME = 'Eshreth_of_Athshe'
 EARTHDATA_PASSWORD = 'SONOlu4mi__._ne8scence'
+
+urs = 'urs.earthdata.nasa.gov'    # Earthdata URL to call for authentication
+prompts = ['Enter NASA Earthdata Login Username \n(or create an account at urs.earthdata.nasa.gov): ',
+           'Enter NASA Earthdata Login Password: ']
+
+homeDir = os.path.expanduser("~") + os.sep
+print("Obtained homeDir: " + homeDir)
+
+with open(homeDir + '.netrc', 'w') as file:
+    print("Attempting to create .netrc file...")
+    # file.write('machine {} login {} password {}'.format(urs, getpass(prompt=prompts[0]), getpass(prompt=prompts[1])))
+    file.write('machine {} login {} password {}'.format(urs, EARTHDATA_USERNAME, EARTHDATA_PASSWORD))
+    file.close()
+with open(homeDir + '.urs_cookies', 'w') as file:
+    print("Attempting to create .urs_cookies file...")
+    file.write('')
+    file.close()
+with open(homeDir + '.dodsrc', 'w') as file:
+    print("Attempting to create .dodsrc file...")
+    file.write('HTTP.COOKIEJAR={}.urs_cookies\n'.format(homeDir))
+    file.write('HTTP.NETRC={}.netrc'.format(homeDir))
+    file.close()
+
+print('Saved .netrc, .urs_cookies, and .dodsrc to:', homeDir)
+
+# Set appropriate permissions for Linux/macOS
+if platform.system() != "Windows":
+    Popen('chmod og-rw ~/.netrc', shell=True)
+else:
+    # Copy dodsrc to working directory in Windows
+    shutil.copy2(homeDir + '.dodsrc', os.getcwd())
+    print('Copied .dodsrc to:', os.getcwd())
 
 # This method POSTs formatted JSON WSP requests to the GES DISC endpoint URL and returns the response
 def get_http_data(request):
@@ -21,7 +61,7 @@ def get_http_data(request):
     data = json.dumps(request)
     r = http.request('POST', svcurl, body=data, headers=hdrs)
     response = json.loads(r.data)
-    
+
     # Check for errors
     if response['type'] == 'jsonwsp/fault' :
         print('API Error: faulty request')
@@ -53,7 +93,7 @@ varNames = ['/HDFEOS/SWATHS/Temperature/Data Fields/Temperature',
 dimName = '/HDFEOS/SWATHS/Temperature/nLevels'
 dimVals = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 dimSlice = []
-for i in range(len(dimVals)) :
+for i in range(len(dimVals)):
     dimSlice.append({'dimensionId': dimName, 'dimensionValue': dimVals[i]})
 
 # Construct JSON WSP request for API method: subset
