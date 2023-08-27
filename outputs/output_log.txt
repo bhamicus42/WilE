@@ -1,4 +1,56 @@
-2023-08-24 18:13:51,112:__init__:C:\g\WilE
-2023-08-24 18:13:51,112:__init__:beep beep settin up the tootle toot:
+2023-08-27 16:49:55,120:__init__:C:\g\WilE
+2023-08-27 16:49:55,120:__init__:beep beep settin up the tootle toot:
 wile object instantiated
-2023-08-24 18:13:51,113:pull_ldas_rt:Pulling realtime LDAS data.
+2023-08-27 16:49:55,120:pull_ldas_rt:Pulling realtime LDAS data.
+2023-08-27 16:49:59,551:pull_ldas_rt:GES DISC job ID: 64ebe122fd13e049fd7d8f93
+2023-08-27 16:49:59,551:pull_ldas_rt:GES DISC job status: Accepted
+2023-08-27 16:50:04,957:pull_ldas_rt:GES DISC job status: Succeeded (100% complete)
+2023-08-27 16:50:04,957:pull_ldas_rt:GES DISC job Finished:  Complete (ML2T_004)
+2023-08-27 16:50:06,665:pull_ldas_rt:Retrieved 5 out of 5 expected items
+2023-08-27 16:50:06,665:pull_ldas_rt:
+Documentation:
+2023-08-27 16:50:06,665:pull_ldas_rt:
+HTTP_services output:
+2023-08-27 16:50:28,398:pull_ldas_rt:Status code is 401, Unauthorized for this URL:
+https://acdisc.gesdisc.eosdis.nasa.gov/daac-bin/OTF/HTTP_services.cgi?FILENAME=%2Fdata%2FAura_MLS_Level2%2FML2T.004%2F2015%2FMLS-Aura_L2GP-Temperature_v04-22-c01_2015d213.he5&BBOX=-30%2C-180%2C30%2C180&LABEL=MLS-Aura_L2GP-Temperature_v04-22-c01_2015d213.SUB.he5&VARIABLES=..2FHDFEOS..2FSWATHS..2FTemperature..2FData..20Fields..2FTemperature%2C..2FHDFEOS..2FSWATHS..2FTemperature..2FData..20Fields..2FTemperaturePrecision%2C..2FHDFEOS..2FSWATHS..2FTemperature..2FData..20Fields..2FQuality%2C..2FHDFEOS..2FSWATHS..2FTemperature..2FGeolocation..20Fields..2FPressure&TIME=2015-08-01T00%3A00%3A00%2F2015-08-01T23%3A59%3A59&VERSION=1.02&DATASET_VERSION=004&SERVICE=SUBSET_LEVEL2&SHORTNAME=ML2T&FORMAT=aGU1Lw&LAYERS=LAYER_..2FHDFEOS..2FSWATHS..2FTemperature..2FnLevels%2C1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C12%2C13&FLAGS=GRIDTYPE__SWATH
+Traceback (most recent call last):
+  File "C:\g\WilE\wildfire_probability_estimator.py", line 477, in pull_ldas_rt
+    result.raise_for_status()
+  File "C:\Users\arche\AppData\Local\Programs\Python\Python39\lib\site-packages\requests\models.py", line 943, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: https://urs.earthdata.nasa.gov/oauth/authorize/?scope=uid&app_type=401&client_id=e2WVk8Pw6weeLUKZYOxvTQ&response_type=code&redirect_uri=https%3A%2F%2Facdisc.gesdisc.eosdis.nasa.gov%2Fdata-redirect&state=aHR0cHM6Ly9hY2Rpc2MuZ2VzZGlzYy5lb3NkaXMubmFzYS5nb3YvZGFhYy1iaW4vT1RGL0hUVFBfc2VydmljZXMuY2dpP0ZJTEVOQU1FPSUyRmRhdGElMkZBdXJhX01MU19MZXZlbDIlMkZNTDJULjAwNCUyRjIwMTUlMkZNTFMtQXVyYV9MMkdQLVRlbXBlcmF0dXJlX3YwNC0yMi1jMDFfMjAxNWQyMTMuaGU1JkJCT1g9LTMwJTJDLTE4MCUyQzMwJTJDMTgwJkxBQkVMPU1MUy1BdXJhX0wyR1AtVGVtcGVyYXR1cmVfdjA0LTIyLWMwMV8yMDE1ZDIxMy5TVUIuaGU1JlZBUklBQkxFUz0uLjJGSERGRU9TLi4yRlNXQVRIUy4uMkZUZW1wZXJhdHVyZS4uMkZEYXRhLi4yMEZpZWxkcy4uMkZUZW1wZXJhdHVyZSUyQy4uMkZIREZFT1MuLjJGU1dBVEhTLi4yRlRlbXBlcmF0dXJlLi4yRkRhdGEuLjIwRmllbGRzLi4yRlRlbXBlcmF0dXJlUHJlY2lzaW9uJTJDLi4yRkhERkVPUy4uMkZTV0FUSFMuLjJGVGVtcGVyYXR1cmUuLjJGRGF0YS4uMjBGaWVsZHMuLjJGUXVhbGl0eSUyQy4uMkZIREZFT1MuLjJGU1dBVEhTLi4yRlRlbXBlcmF0dXJlLi4yRkdlb2xvY2F0aW9uLi4yMEZpZWxkcy4uMkZQcmVzc3VyZSZUSU1FPTIwMTUtMDgtMDFUMDAlM0EwMCUzQTAwJTJGMjAxNS0wOC0wMVQyMyUzQTU5JTNBNTkmVkVSU0lPTj0xLjAyJkRBVEFTRVRfVkVSU0lPTj0wMDQmU0VSVklDRT1TVUJTRVRfTEVWRUwyJlNIT1JUTkFNRT1NTDJUJkZPUk1BVD1hR1UxTHcmTEFZRVJTPUxBWUVSXy4uMkZIREZFT1MuLjJGU1dBVEhTLi4yRlRlbXBlcmF0dXJlLi4yRm5MZXZlbHMlMkMxJTJDMiUyQzMlMkM0JTJDNSUyQzYlMkM3JTJDOCUyQzklMkMxMCUyQzExJTJDMTIlMkMxMyZGTEFHUz1HUklEVFlQRV9fU1dBVEg
+Stack (most recent call last):
+  File "C:\g\WilE\wile_main.py", line 15, in <module>
+    wpe.pull_ldas_rt()
+  File "C:\g\WilE\wildfire_probability_estimator.py", line 486, in pull_ldas_rt
+    self.logger.error('Status code is %d, %s for this URL:\n%s' % (result.status_code, result.reason, URL),
+2023-08-27 16:50:28,398:pull_ldas_rt:Help for downloading data is at https://disc.gsfc.nasa.gov/information/documents?title=Data%20Access
+2023-08-27 16:50:50,092:pull_ldas_rt:Status code is 401, Unauthorized for this URL:
+https://acdisc.gesdisc.eosdis.nasa.gov/daac-bin/OTF/HTTP_services.cgi?FILENAME=%2Fdata%2FAura_MLS_Level2%2FML2T.004%2F2015%2FMLS-Aura_L2GP-Temperature_v04-22-c01_2015d214.he5&BBOX=-30%2C-180%2C30%2C180&LABEL=MLS-Aura_L2GP-Temperature_v04-22-c01_2015d214.SUB.he5&VARIABLES=..2FHDFEOS..2FSWATHS..2FTemperature..2FData..20Fields..2FTemperature%2C..2FHDFEOS..2FSWATHS..2FTemperature..2FData..20Fields..2FTemperaturePrecision%2C..2FHDFEOS..2FSWATHS..2FTemperature..2FData..20Fields..2FQuality%2C..2FHDFEOS..2FSWATHS..2FTemperature..2FGeolocation..20Fields..2FPressure&VERSION=1.02&DATASET_VERSION=004&SERVICE=SUBSET_LEVEL2&SHORTNAME=ML2T&FORMAT=aGU1Lw&LAYERS=LAYER_..2FHDFEOS..2FSWATHS..2FTemperature..2FnLevels%2C1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C12%2C13&FLAGS=GRIDTYPE__SWATH
+Traceback (most recent call last):
+  File "C:\g\WilE\wildfire_probability_estimator.py", line 477, in pull_ldas_rt
+    result.raise_for_status()
+  File "C:\Users\arche\AppData\Local\Programs\Python\Python39\lib\site-packages\requests\models.py", line 943, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: https://urs.earthdata.nasa.gov/oauth/authorize/?scope=uid&app_type=401&client_id=e2WVk8Pw6weeLUKZYOxvTQ&response_type=code&redirect_uri=https%3A%2F%2Facdisc.gesdisc.eosdis.nasa.gov%2Fdata-redirect&state=aHR0cHM6Ly9hY2Rpc2MuZ2VzZGlzYy5lb3NkaXMubmFzYS5nb3YvZGFhYy1iaW4vT1RGL0hUVFBfc2VydmljZXMuY2dpP0ZJTEVOQU1FPSUyRmRhdGElMkZBdXJhX01MU19MZXZlbDIlMkZNTDJULjAwNCUyRjIwMTUlMkZNTFMtQXVyYV9MMkdQLVRlbXBlcmF0dXJlX3YwNC0yMi1jMDFfMjAxNWQyMTQuaGU1JkJCT1g9LTMwJTJDLTE4MCUyQzMwJTJDMTgwJkxBQkVMPU1MUy1BdXJhX0wyR1AtVGVtcGVyYXR1cmVfdjA0LTIyLWMwMV8yMDE1ZDIxNC5TVUIuaGU1JlZBUklBQkxFUz0uLjJGSERGRU9TLi4yRlNXQVRIUy4uMkZUZW1wZXJhdHVyZS4uMkZEYXRhLi4yMEZpZWxkcy4uMkZUZW1wZXJhdHVyZSUyQy4uMkZIREZFT1MuLjJGU1dBVEhTLi4yRlRlbXBlcmF0dXJlLi4yRkRhdGEuLjIwRmllbGRzLi4yRlRlbXBlcmF0dXJlUHJlY2lzaW9uJTJDLi4yRkhERkVPUy4uMkZTV0FUSFMuLjJGVGVtcGVyYXR1cmUuLjJGRGF0YS4uMjBGaWVsZHMuLjJGUXVhbGl0eSUyQy4uMkZIREZFT1MuLjJGU1dBVEhTLi4yRlRlbXBlcmF0dXJlLi4yRkdlb2xvY2F0aW9uLi4yMEZpZWxkcy4uMkZQcmVzc3VyZSZWRVJTSU9OPTEuMDImREFUQVNFVF9WRVJTSU9OPTAwNCZTRVJWSUNFPVNVQlNFVF9MRVZFTDImU0hPUlROQU1FPU1MMlQmRk9STUFUPWFHVTFMdyZMQVlFUlM9TEFZRVJfLi4yRkhERkVPUy4uMkZTV0FUSFMuLjJGVGVtcGVyYXR1cmUuLjJGbkxldmVscyUyQzElMkMyJTJDMyUyQzQlMkM1JTJDNiUyQzclMkM4JTJDOSUyQzEwJTJDMTElMkMxMiUyQzEzJkZMQUdTPUdSSURUWVBFX19TV0FUSA
+Stack (most recent call last):
+  File "C:\g\WilE\wile_main.py", line 15, in <module>
+    wpe.pull_ldas_rt()
+  File "C:\g\WilE\wildfire_probability_estimator.py", line 486, in pull_ldas_rt
+    self.logger.error('Status code is %d, %s for this URL:\n%s' % (result.status_code, result.reason, URL),
+2023-08-27 16:50:50,092:pull_ldas_rt:Help for downloading data is at https://disc.gsfc.nasa.gov/information/documents?title=Data%20Access
+2023-08-27 16:51:11,776:pull_ldas_rt:Status code is 401, Unauthorized for this URL:
+https://acdisc.gesdisc.eosdis.nasa.gov/daac-bin/OTF/HTTP_services.cgi?FILENAME=%2Fdata%2FAura_MLS_Level2%2FML2T.004%2F2015%2FMLS-Aura_L2GP-Temperature_v04-22-c01_2015d215.he5&BBOX=-30%2C-180%2C30%2C180&LABEL=MLS-Aura_L2GP-Temperature_v04-22-c01_2015d215.SUB.he5&VARIABLES=..2FHDFEOS..2FSWATHS..2FTemperature..2FData..20Fields..2FTemperature%2C..2FHDFEOS..2FSWATHS..2FTemperature..2FData..20Fields..2FTemperaturePrecision%2C..2FHDFEOS..2FSWATHS..2FTemperature..2FData..20Fields..2FQuality%2C..2FHDFEOS..2FSWATHS..2FTemperature..2FGeolocation..20Fields..2FPressure&TIME=2015-08-03T00%3A00%3A00%2F2015-08-03T23%3A59%3A59&VERSION=1.02&DATASET_VERSION=004&SERVICE=SUBSET_LEVEL2&SHORTNAME=ML2T&FORMAT=aGU1Lw&LAYERS=LAYER_..2FHDFEOS..2FSWATHS..2FTemperature..2FnLevels%2C1%2C2%2C3%2C4%2C5%2C6%2C7%2C8%2C9%2C10%2C11%2C12%2C13&FLAGS=GRIDTYPE__SWATH
+Traceback (most recent call last):
+  File "C:\g\WilE\wildfire_probability_estimator.py", line 477, in pull_ldas_rt
+    result.raise_for_status()
+  File "C:\Users\arche\AppData\Local\Programs\Python\Python39\lib\site-packages\requests\models.py", line 943, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: https://urs.earthdata.nasa.gov/oauth/authorize/?scope=uid&app_type=401&client_id=e2WVk8Pw6weeLUKZYOxvTQ&response_type=code&redirect_uri=https%3A%2F%2Facdisc.gesdisc.eosdis.nasa.gov%2Fdata-redirect&state=aHR0cHM6Ly9hY2Rpc2MuZ2VzZGlzYy5lb3NkaXMubmFzYS5nb3YvZGFhYy1iaW4vT1RGL0hUVFBfc2VydmljZXMuY2dpP0ZJTEVOQU1FPSUyRmRhdGElMkZBdXJhX01MU19MZXZlbDIlMkZNTDJULjAwNCUyRjIwMTUlMkZNTFMtQXVyYV9MMkdQLVRlbXBlcmF0dXJlX3YwNC0yMi1jMDFfMjAxNWQyMTUuaGU1JkJCT1g9LTMwJTJDLTE4MCUyQzMwJTJDMTgwJkxBQkVMPU1MUy1BdXJhX0wyR1AtVGVtcGVyYXR1cmVfdjA0LTIyLWMwMV8yMDE1ZDIxNS5TVUIuaGU1JlZBUklBQkxFUz0uLjJGSERGRU9TLi4yRlNXQVRIUy4uMkZUZW1wZXJhdHVyZS4uMkZEYXRhLi4yMEZpZWxkcy4uMkZUZW1wZXJhdHVyZSUyQy4uMkZIREZFT1MuLjJGU1dBVEhTLi4yRlRlbXBlcmF0dXJlLi4yRkRhdGEuLjIwRmllbGRzLi4yRlRlbXBlcmF0dXJlUHJlY2lzaW9uJTJDLi4yRkhERkVPUy4uMkZTV0FUSFMuLjJGVGVtcGVyYXR1cmUuLjJGRGF0YS4uMjBGaWVsZHMuLjJGUXVhbGl0eSUyQy4uMkZIREZFT1MuLjJGU1dBVEhTLi4yRlRlbXBlcmF0dXJlLi4yRkdlb2xvY2F0aW9uLi4yMEZpZWxkcy4uMkZQcmVzc3VyZSZUSU1FPTIwMTUtMDgtMDNUMDAlM0EwMCUzQTAwJTJGMjAxNS0wOC0wM1QyMyUzQTU5JTNBNTkmVkVSU0lPTj0xLjAyJkRBVEFTRVRfVkVSU0lPTj0wMDQmU0VSVklDRT1TVUJTRVRfTEVWRUwyJlNIT1JUTkFNRT1NTDJUJkZPUk1BVD1hR1UxTHcmTEFZRVJTPUxBWUVSXy4uMkZIREZFT1MuLjJGU1dBVEhTLi4yRlRlbXBlcmF0dXJlLi4yRm5MZXZlbHMlMkMxJTJDMiUyQzMlMkM0JTJDNSUyQzYlMkM3JTJDOCUyQzklMkMxMCUyQzExJTJDMTIlMkMxMyZGTEFHUz1HUklEVFlQRV9fU1dBVEg
+Stack (most recent call last):
+  File "C:\g\WilE\wile_main.py", line 15, in <module>
+    wpe.pull_ldas_rt()
+  File "C:\g\WilE\wildfire_probability_estimator.py", line 486, in pull_ldas_rt
+    self.logger.error('Status code is %d, %s for this URL:\n%s' % (result.status_code, result.reason, URL),
+2023-08-27 16:51:11,776:pull_ldas_rt:Help for downloading data is at https://disc.gsfc.nasa.gov/information/documents?title=Data%20Access
+2023-08-27 16:51:11,819:__del__:beep boop, takin down the tootle toot
