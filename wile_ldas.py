@@ -55,7 +55,8 @@ else:
 # This method POSTs formatted JSON WSP requests to the GES DISC endpoint URL and returns the response
 def get_http_data(request):
 
-    hdrs = urllib3.make_headers(basic_auth='Eshreth_of_Athshe:SONOlu4mi__._ne8scence')
+    # hdrs = urllib3.make_headers(basic_auth='Eshreth_of_Athshe:SONOlu4mi__._ne8scence')
+    hdrs = {}
     hdrs['Content-Type'] = 'application/json'
     hdrs['Accept'] = 'application/json'
     data = json.dumps(request)
@@ -219,6 +220,8 @@ for item in results:
 # Print out the documentation links, but do not download them
 print('\nDocumentation:')
 for item in docs: print(item['label']+': '+item['link'])
+
+print(os.getcwd())
 
 # Use the requests library to submit the HTTP_Services URLs and write out the results.
 print('\nHTTP_services output:')
