@@ -343,19 +343,22 @@ class wile:
             os.chdir(self.CALLER_DIR)
 
     def pull_ldas_rt(self):
+        """
+        Pulls most recent LDAS data from GES DISC Earthdata
+        """
+        
 
+
+        # Set up the GES DISC authentication files
         earthdata_auth = get_dict_from_file(self.GES_DISC_AUTH_PATH, self.GES_DISC_AUTH_FNAME)
 
         urs = 'urs.earthdata.nasa.gov'  # Earthdata URL to call for authentication
-        prompts = ['Enter NASA Earthdata Login Username \n(or create an account at urs.earthdata.nasa.gov): ',
-                   'Enter NASA Earthdata Login Password: ']
-
+        
         homeDir = os.path.expanduser("~") + os.sep
         print("Obtained homeDir: " + homeDir)
 
         with open(homeDir + '.netrc', 'w') as file:
             print("Attempting to create .netrc file...")
-            # file.write('machine {} login {} password {}'.format(urs, getpass(prompt=prompts[0]), getpass(prompt=prompts[1])))
             file.write('machine {} login {} password {}'.format(urs, earthdata_auth['login'], earthdata_auth['password']))
             file.close()
         with open(homeDir + '.urs_cookies', 'w') as file:
@@ -369,6 +372,8 @@ class wile:
             file.close()
 
         print('Saved .netrc, .urs_cookies, and .dodsrc to:', homeDir)
+
+
 
         # Set appropriate permissions for Linux/macOS
         if platform.system() != "Windows":
