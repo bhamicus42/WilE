@@ -1,10 +1,6 @@
-# Main class file for the AlertCalifornia Wildfire probability Estimator (WilE).
+# Main class file for the Wildfire probability Estimator (WilE).
 # Last editor: Ben Hoffman
 # Contact: blhoff97@gmail.com
-# This file and its ancillaries use the following formatting conventions:
-# GLOBAL_CONSTANTS intended to be used throughout one or multiple files use caps snakecase
-# local_variables use lowercase snakecase
-# classMembers use camelcase
 
 import os  # for operating on logs
            # for concatenating strings to make a URL
@@ -25,7 +21,6 @@ from time import sleep
 from subprocess import Popen
 import platform
 import shutil
-from requests.auth import HTTPBasicAuth # temporary attempt to resolve 401 error
 
 
 def dir_return(d):
@@ -127,9 +122,8 @@ class wile:
     # TODO: change constants and other relevant objects to private
     # Current data sources:
     # Synoptic MesoNet: weather station data
-    # GES DISC Earthdata: satellite data sets such as Earthdata's LDAS. NOTE: I never figured out what exactly the terms
-    #                     Earthdata and GES DISC refer to; they're used in very similar contexts and almost used
-    #                     interchangeably. I might misuse the terms in this documentation.
+    # Earthdata GES DISC: satellite data sets such as NASA's LDAS. 
+    # NOTE TO SELF: Earthdata is a broader container, GES DISC is a subset of Earthdata
     def __init__(self,
                  syn_token,
                  syn_api_root="https://api.synopticdata.com/v2/",  # root URL for synoptic API requests
@@ -344,7 +338,7 @@ class wile:
 
     def pull_ldas_rt(self):
         """
-        Pulls most recent LDAS data from GES DISC Earthdata
+        Pulls most recent LDAS data from GES DISC Earthdata using authentication data stored in a text file at a location defined in __init__
         """
         
 
@@ -386,7 +380,6 @@ class wile:
         # This method POSTs formatted JSON WSP requests to the GES DISC endpoint URL and returns the response
         def get_http_data(request):
 
-            # hdrs = urllib3.make_headers(basic_auth='Eshreth_of_Athshe:SONOlu4mi__._ne8scence')
             hdrs = {}
             hdrs['Content-Type'] = 'application/json'
             hdrs['Accept'] = 'application/json'
