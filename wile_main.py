@@ -1,10 +1,8 @@
-# Main driver file for the AlertCalifornia Wildfire probability Estimator (WilE).
+# Main driver file for the Wildfire probability Estimator (WilE).
 # Last editor: Ben Hoffman
 # Contact: blhoff97@gmail.com
-# This file and its ancillaries use the following formatting conventions:
-# GLOBAL_CONSTANTS intended to be used throughout one or multiple files use caps snakecase
-# local_variables use lowercase snakecase
-# classAttributes use camelcase
+
+
 
 import wildfire_probability_estimator
 

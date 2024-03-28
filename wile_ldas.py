@@ -21,15 +21,12 @@ EARTHDATA_USERNAME = 'Eshreth_of_Athshe'
 EARTHDATA_PASSWORD = 'SONOlu4mi__._ne8scence'
 
 urs = 'urs.earthdata.nasa.gov'    # Earthdata URL to call for authentication
-prompts = ['Enter NASA Earthdata Login Username \n(or create an account at urs.earthdata.nasa.gov): ',
-           'Enter NASA Earthdata Login Password: ']
 
 homeDir = os.path.expanduser("~") + os.sep
 print("Obtained homeDir: " + homeDir)
 
 with open(homeDir + '.netrc', 'w') as file:
     print("Attempting to create .netrc file...")
-    # file.write('machine {} login {} password {}'.format(urs, getpass(prompt=prompts[0]), getpass(prompt=prompts[1])))
     file.write('machine {} login {} password {}'.format(urs, EARTHDATA_USERNAME, EARTHDATA_PASSWORD))
     file.close()
 with open(homeDir + '.urs_cookies', 'w') as file:
@@ -55,7 +52,6 @@ else:
 # This method POSTs formatted JSON WSP requests to the GES DISC endpoint URL and returns the response
 def get_http_data(request):
 
-    # hdrs = urllib3.make_headers(basic_auth='Eshreth_of_Athshe:SONOlu4mi__._ne8scence')
     hdrs = {}
     hdrs['Content-Type'] = 'application/json'
     hdrs['Accept'] = 'application/json'
@@ -127,8 +123,8 @@ response = get_http_data(subset_request)
 
 # Report the JobID and initial status
 myJobId = response['result']['jobId']
-print('Job ID: '+myJobId)
-print('Job status: '+response['result']['Status'])
+print('Job ID: ' + myJobId)
+print('Job status: ' + response['result']['Status'])
 
 # Construct JSON WSP request for API method: GetStatus
 status_request = {
@@ -221,7 +217,7 @@ for item in results:
 print('\nDocumentation:')
 for item in docs: print(item['label']+': '+item['link'])
 
-print(os.getcwd())
+print('Working in ' + os.getcwd())
 
 # Use the requests library to submit the HTTP_Services URLs and write out the results.
 print('\nHTTP_services output:')
