@@ -129,7 +129,7 @@ class wile:
     # Synoptic MesoNet: weather station data
     # GES DISC Earthdata: satellite data sets such as Earthdata's LDAS. NOTE: I never figured out what exactly the terms
     #                     Earthdata and GES DISC refer to; they're used in very similar contexts and almost used
-    #                     interchangeably. I might misuses the terms in this documentation.
+    #                     interchangeably. I might misuse the terms in this documentation.
     def __init__(self,
                  syn_token,
                  syn_api_root="https://api.synopticdata.com/v2/",  # root URL for synoptic API requests
@@ -152,7 +152,7 @@ class wile:
                                 "OBSERVATIONS.relative_humidity_value_1.date_time",
                                 "OBSERVATIONS.relative_humidity_value_1.value"],
                  gesdisc_auth_setup_flag=False,
-                 gesdisc_auth_path='C:\\Users\\arche\\WilE certs\\Earthdata',
+                 gesdisc_auth_path='C:\\Users\\arche\\WilE certs\\Earthdata',   # TODO: talk about this in documentation
                  gesdisc_auth_fname='login.txt',
                  auto_clean=True,  # whether to automatically clean data according to preprogrammed parameters
                  logger_level=20,
@@ -162,15 +162,15 @@ class wile:
                  print_to_console=True):
 
         # set global constants for this class
-        self.CALLER_DIR = sys.path[0]  # location of the file calling/running this code
+        self.CALLER_DIR = sys.path[0]  # gets location of the file calling/running this code
         self.DATA_DIR = setup_new_dir(self.CALLER_DIR, "data")  # location of data for use
         self.DATA_RT_DIR = setup_new_dir(self.DATA_DIR, "rt")  # where to store "realtime" data, that is, the last
                                                                # available measurements for variables of interest
         self.DATA_HIST_DIR = setup_new_dir(self.DATA_DIR, "hist")  # where to store historical data sets
         self.DATA_DERIVED_DIR = setup_new_dir(self.DATA_DIR, "derived")  # where to store derived data sets
         self.DATA_TMP_DIR = setup_new_dir(self.DATA_DIR, "tmp")  # if a file needs to be temporarily created
-                                                                          # before being removed, it lives here while
-                                                                          # it exists.
+                                                                 # before being removed, it lives here while
+                                                                 # it exists.
         self.DEBUG_DIR = setup_new_dir(self.CALLER_DIR, "debug")  # if any files are necessary for debugging purposes,
                                                                   # they'll be placed here
                                                                   # TODO: automatically clean this folder
@@ -542,178 +542,6 @@ class wile:
             except:
                 print('Error! Status code is %d for this URL:\n%s' % (result.status.code, URL))
                 print('Help for downloading data is at https://disc.gsfc.nasa.gov/information/documents?title=Data%20Access')
-
-
-
-    def pull_ldas_rt2(self,
-                     svcurl='https://disc.gsfc.nasa.gov/service/subset/jsonwsp',  # URL for the GES DISC subset service endpoint
-                     product='ML2T_004',  # Define the parameters for the data subset
-                     beg_time='2015-08-01T00:00:00.000Z',
-                     end_time='2015-08-03T23:59:59.999Z',
-                     min_lon=-180.0,
-                     max_lon=180.0,
-                     min_lat=-30.0,
-                     max_lat=30.0,
-                     var_names=['/HDFEOS/SWATHS/Temperature/Data Fields/Temperature',
-                                  '/HDFEOS/SWATHS/Temperature/Data Fields/TemperaturePrecision',
-                                  '/HDFEOS/SWATHS/Temperature/Data Fields/Quality'],  # The dimension slice defaults to pressure levels between 1000 and 100 hPa
-                     dim_name='/HDFEOS/SWATHS/Temperature/nLevels',
-                     dim_vals=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
-                     dim_slice=[]):
-
-        dir_return(self.CALLER_DIR)
-
-        # TODO: decompose this monstrosity
-        # https://disc.gsfc.nasa.gov/information/howto?title=How%20to%20Use%20the%20Web%20Services%20API%20for%20Subsetting
-        self.logger.info("Pulling realtime LDAS data.")
-
-        self.gesdisc_setup_auth(self.GES_DISC_AUTH_PATH,
-                                self.GES_DISC_AUTH_FNAME)
-
-        # Create a urllib PoolManager instance to make requests.
-        http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
-                                   ca_certs=certifi.where())
-
-        # construct dimension slices for the subset request
-        for i in range(len(dim_vals)):
-            dim_slice.append({'dimensionId': dim_name, 'dimensionValue': dim_vals[i]})
-
-        # Construct JSON WSP request for API method: subset
-        subset_request = {
-            'methodname': 'subset',
-            'type': 'jsonwsp/request',
-            'version': '1.0',
-            'args': {
-                'role': 'subset',
-                'start': beg_time,
-                'end': end_time,
-                'box': [min_lon, min_lat, max_lon, max_lat],
-                'crop': True,
-                'data': [{'datasetId': product,
-                          'variable': var_names[0],
-                          'slice': dim_slice
-                          },
-                         {'datasetId': product,
-                          'variable': var_names[1],
-                          'slice': dim_slice
-                          },
-                         {'datasetId': product,
-                          'variable': var_names[2]
-                          }]
-            }
-        }
-
-        # Submit the subset request to the GES DISC Server
-        response = self.gesdisc_get_http_data(subset_request, http, svcurl)
-
-        # Report the JobID and initial status
-        my_job_id = response['result']['jobId']
-        self.logger.info('GES DISC job ID: ' + my_job_id)
-        self.logger.info('GES DISC job status: ' + response['result']['Status'])
-
-        # Construct JSON WSP request for API method: GetStatus
-        status_request = {
-            'methodname': 'GetStatus',
-            'version': '1.0',
-            'type': 'jsonwsp/request',
-            'args': {'jobId': my_job_id}
-        }
-
-        # Announce job status periodically until it finishes or fails
-        while response['result']['Status'] in ['Accepted', 'Running']:
-            sleep(5)
-            response = self.gesdisc_get_http_data(status_request, http, svcurl)
-            status = response['result']['Status']
-            percent = response['result']['PercentCompleted']
-            self.logger.info('GES DISC job status: %s (%d%c complete)' % (status, percent, '%'))
-
-        if response['result']['Status'] == 'Succeeded':
-            self.logger.info('GES DISC job Finished:  %s' % response['result']['message'])
-        else:
-            if self.logger.level == 10:  # if set to debugging, give verbose report
-                self.logger.error('GES DISC job failed: %s' % response['fault']['code'], stack_info=True, exc_info=True)
-            else:
-                self.logger.error('GES DISC job failed: %s' % response['fault']['code'])
-            # sys.exit(1)
-            return
-
-        # Use the API method named GetResult. This method will return the URLs along with three additional attributes:
-        # a label, plus the beginning and ending time stamps for that particular data granule. The label serves as the
-        # filename for the downloaded subsets.
-
-        # Construct JSON WSP request for API method: GetResult
-        batchsize = 20
-        results_request = {
-            'methodname': 'GetResult',
-            'version': '1.0',
-            'type': 'jsonwsp/request',
-            'args': {
-                'jobId': my_job_id,
-                'count': batchsize,
-                'startIndex': 0
-            }
-        }
-
-        # Retrieve the results in JSON in multiple batches
-        # Initialize variables, then submit the first GetResults request
-        # Add the results from this batch to the list and increment the count
-        results = []
-        count = 0
-        response = self.gesdisc_get_http_data(results_request, http, svcurl)
-        count = count + response['result']['itemsPerPage']
-        results.extend(response['result']['items'])
-
-        # Increment the startIndex and keep asking for more results until we have them all
-        total = response['result']['totalResults']
-        while count < total:
-            results_request['args']['startIndex'] += batchsize
-            response = self.gesdisc_get_http_data(results_request, http, svcurl)
-            count = count + response['result']['itemsPerPage']
-            results.extend(response['result']['items'])
-
-        # Check on the bookkeeping
-        self.logger.info('Retrieved %d out of %d expected items' % (len(results), total))
-
-        # Sort the results into documents and URLs
-        docs, urls = self.gesdisc_sort_results(results)
-
-        if self.logger.level == 10:  # if the logger is set to debug, provide additional information about the code that
-                                     # ran
-
-            # Print out the documentation links, but do not download them
-            self.logger.debug('\nDocumentation:')
-            for item in docs: self.logger.debug(item['label'] + ': ' + item['link'])
-
-        dir_return(self.CALLER_DIR)
-
-        # Use the requests library to submit the HTTP_Services URLs and write the results to file.
-        self.logger.info('\nHTTP_services output:')
-        for item in urls:
-            URL = item['link']
-            result = requests.get(URL)
-
-            if result.status_code == 401:
-                self.logger.debug('\t (First attempt to retrieve data 401\'d, attempting to pass auth info again)')
-
-                earthdata_auth = get_dict_from_file(self.GES_DISC_AUTH_PATH,
-                                                    self.GES_DISC_AUTH_FNAME)
-                earthdata_setup_auth(earthdata_auth, dodsrc_dest=self.CALLER_DIR)
-                result = requests.get(URL, auth=HTTPBasicAuth('Eshreth_of_Athshe', 'SONOlu4mi__._ne8scence'))
-
-            try:
-                result.raise_for_status()
-                # os.chdir(self.DATA_RT_DIR)
-                outfn = item['label']
-                f = open(outfn, 'wb')
-                f.write(result.content)
-                f.close()
-                self.logger.info("successfuly downloaded and wrote " + outfn)
-                # os.chdir(self.CALLER_DIR)
-            except:
-                self.logger.error('Status code is %d, %s for this URL:\n%s' % (result.status_code, result.reason, URL),
-                                  stack_info=True, exc_info=True)
-                self.logger.debug('Help for downloading data is at https://disc.gsfc.nasa.gov/information/documents?title=Data%20Access')
-
 
     def pull_historic(self):
         # pull historic data
