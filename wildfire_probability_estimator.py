@@ -1,26 +1,38 @@
-# Main class file for the AlertCalifornia Wildfire probability Estimator (WilE).
+# Main class file for the Wildfire probability Estimator (WilE).
 # Last editor: Ben Hoffman
 # Contact: blhoff97@gmail.com
-# This file and its ancillaries use the following formatting conventions:
-# GLOBAL_CONSTANTS intended to be used throughout one or multiple files use caps snakecase
-# local_variables use lowercase snakecase
-# classMembers use camelcase
 
-# some efforts are made in this section to only import what is needed so as to reduce overhead
-import requests  # for accessing HTML-formatted and other web data
 import os  # for operating on logs
            # for concatenating strings to make a URL
            # for changing directories, such as when working with data
            # for getting current working directory
            # TODO: make the directory generation more robust: https://linuxize.com/post/python-get-change-current-working-directory/
 import logging
-from sys import stdout
-from sys import path as sys_path
-from sys import getsizeof as sys_getsizeof
+import sys
 from datetime import datetime, timedelta  # to mark files with the datetime their data was pulled and to iterate across time ranges
 import pandas as pd
 
+# additional modules needed for working with Earthdata LDAS
+import json
+import urllib3
+import certifi
+import requests
+from time import sleep
+from subprocess import Popen
+import platform
+import shutil
 
+
+def dir_return(d):
+    """
+    Checks if os.cwd is the desired dir. If so, return. If not, change to desired directory.
+    :param d: string giving the complete path of the desired dir.
+    :return: none
+    """
+    if os.getcwd() == d:
+        return
+    else:
+        os.chdir(d)
 
 def setup_new_dir(base_dir, new_dir):
     """
@@ -37,11 +49,83 @@ def setup_new_dir(base_dir, new_dir):
 
     return new_dir_path
 
+def earthdata_setup_auth(auth,
+                         dodsrc_dest,
+                         urs='urs.Earthdata.nasa.gov',  # Earthdata URL to call for authentication
+                         ):
+    """
+    Creates .netrc, .urs_cookies, and .dodsrc files in bash home directory; these files are prerequisite authenticators
+    to access GES DISC data such as Earthdata's LDAS set
+    :param dodsrc_dest: string giving path to destination of the .dodsrc file
+    :param auth: dictionary giving authentication details; must have structure 'login':<login>, 'password':<password>
+    :param urs: string giving URL to call for Earthdata authentication. Defaults to 'urs.Earthdata.nasa.gov'
+    :return: none
+    """
+    auth_dir = os.path.expanduser("~") + os.sep
 
-# TODO: change constants and other relevant objects to private
+    with open(auth_dir + '.netrc', 'w') as file:
+        file.write('machine {} login {} password {}'.format(urs,
+                                                            auth['login'],
+                                                            auth['password']))
+        file.close()
+    with open(auth_dir + '.urs_cookies', 'w') as file:
+        file.write('')
+        file.close()
+    with open(auth_dir + '.dodsrc', 'w') as file:
+        file.write('HTTP.COOKIEJAR={}.urs_cookies\n'.format(auth_dir))
+        file.write('HTTP.NETRC={}.netrc'.format(auth_dir))
+        file.close()
+
+    # TODO:
+    # print('Saved .netrc, .urs_cookies, and .dodsrc to:', auth_dir)
+
+    # Set appropriate permissions for Linux/macOS
+    if platform.system() != "Windows":
+        Popen('chmod og-rw ~/.netrc', shell=True)
+    else:
+        # Copy dodsrc to working directory in Windows
+        shutil.copy2(auth_dir + '.dodsrc', dodsrc_dest)
+        # print('Copied .dodsrc to:', dodsrc_dest)
+
+def get_dict_from_file(d, fname):
+    """
+    retrieves a dictionary object from a text file; assumes key and value pairs are separated by ',' and each pair is
+    on its own line
+    :param d: string giving the directory to find the file in
+    :param fname: string giving the filename of the text file
+    :return: data, a dictionary constructed from the data in the text file
+    """
+    # TODO: make dir optional (which defaults to working in cwd) and give fname a default
+    # TODO: add error handling
+    # https://www.quora.com/How-do-you-convert-a-text-file-into-a-dictionary-Python-syntax-file-dictionary-object-methods-and-development
+    caller_dir = os.getcwd()    # get caller dir to return to after data is pulled
+    os.chdir(d)   # go to target directory
+
+    data = {}  # Create an empty dictionary to put the data in
+
+    with open(fname, 'r') as f:
+        lines = f.readlines()   # Read the contents of the file into a list
+
+        for line in lines:  # Loop through the list of lines
+            key, value = line.strip().split(',')    # Split the line into key-value pairs
+            data[key] = value   # Store the key-value pairs in the dictionary
+
+        # The dictionary 'data' now contains the contents of the text file
+
+    os.chdir(caller_dir)    # return to caller dir
+
+    return data
+
+
+
 class wile:
+    # TODO: change constants and other relevant objects to private
+    # Current data sources:
+    # Synoptic MesoNet: weather station data
+    # Earthdata GES DISC: satellite data sets such as NASA's LDAS. 
+    # NOTE TO SELF: Earthdata is a broader container, GES DISC is a subset of Earthdata
     def __init__(self,
-                 token,
+                 syn_token,
                  syn_api_root="https://api.synopticdata.com/v2/",  # root URL for synoptic API requests
                  syn_time_format="%Y%m%d%H%M",  # format for time specifiers in synoptic API URLs
                  syn_rt_filter="stations/latest",  # filter to get real-time data in synoptic API requests
@@ -61,6 +145,9 @@ class wile:
                                 "OBSERVATIONS.dew_point_temperature_value_1.value",
                                 "OBSERVATIONS.relative_humidity_value_1.date_time",
                                 "OBSERVATIONS.relative_humidity_value_1.value"],
+                 gesdisc_auth_setup_flag=False,
+                 gesdisc_auth_path='C:\\Users\\arche\\WilE certs\\Earthdata',   # TODO: talk about this in documentation
+                 gesdisc_auth_fname='login.txt',
                  auto_clean=True,  # whether to automatically clean data according to preprogrammed parameters
                  logger_level=20,
                  logname="output_log.txt",
@@ -69,17 +156,20 @@ class wile:
                  print_to_console=True):
 
         # set global constants for this class
-        self.CALLER_DIR = sys_path[0]  # location of the file calling/running this code
+        self.CALLER_DIR = sys.path[0]  # gets location of the file calling/running this code
         self.DATA_DIR = setup_new_dir(self.CALLER_DIR, "data")  # location of data for use
         self.DATA_RT_DIR = setup_new_dir(self.DATA_DIR, "rt")  # where to store "realtime" data, that is, the last
                                                                # available measurements for variables of interest
         self.DATA_HIST_DIR = setup_new_dir(self.DATA_DIR, "hist")  # where to store historical data sets
         self.DATA_DERIVED_DIR = setup_new_dir(self.DATA_DIR, "derived")  # where to store derived data sets
         self.DATA_TMP_DIR = setup_new_dir(self.DATA_DIR, "tmp")  # if a file needs to be temporarily created
-                                                                          # before being removed, it lives here while
-                                                                          # it exists.
-        self.OUTPUT_DIR = setup_new_dir(self.DATA_DIR, "outputs")  # location of any output files
-        self.SYNOPTIC_API_TOKEN = token
+                                                                 # before being removed, it lives here while
+                                                                 # it exists.
+        self.DEBUG_DIR = setup_new_dir(self.CALLER_DIR, "debug")  # if any files are necessary for debugging purposes,
+                                                                  # they'll be placed here
+                                                                  # TODO: automatically clean this folder
+        self.OUTPUT_DIR = setup_new_dir(self.CALLER_DIR, "outputs")  # location of any output files
+        self.SYNOPTIC_API_TOKEN = syn_token
         self.SYNOPTIC_API_ROOT = syn_api_root  # this is unlikely to change anytime soon but I figured I should make it
                                                # easily changable just in case
         self.SYN_TIME_FORMAT = syn_time_format  # ditto
@@ -90,6 +180,12 @@ class wile:
         # TODO: consider finding a way to keep all observation data
         # TODO: check what the difference is between sea level pressure measurement 1 and 1d is, what air temp 1 and 2 is
         self.SYNOPTIC_RESPONSE_COLUMNS = syn_resp_cols
+
+        self.GES_DISC_AUTH_SETUP_FLAG = gesdisc_auth_setup_flag  # whether or not the GES DISC authentication files
+                                                                 # have been setup yet. These are needed to access any
+                                                                 # GES DISC data like LDAS
+        self.GES_DISC_AUTH_PATH = gesdisc_auth_path
+        self.GES_DISC_AUTH_FNAME = gesdisc_auth_fname
 
         self.AUTO_CLEAN = auto_clean
 
@@ -111,7 +207,7 @@ class wile:
         file_handler.setFormatter(formatter)
         self.logger.addHandler(file_handler)
         if print_to_console:
-            console_handler = logging.StreamHandler(stdout)
+            console_handler = logging.StreamHandler(sys.stdout)
             console_handler.setFormatter(formatter)
             self.logger.addHandler(console_handler)
         self.logger.debug(self.CALLER_DIR)
@@ -123,48 +219,86 @@ class wile:
 
         self.logger.info("beep beep settin up the tootle toot:\n" + "wile object instantiated")
 
+    def __del__(self):
+        self.logger.info("beep boop, takin down the tootle toot")
 
+        # delete GES DISC authentication files
 
-    # def syn_format(self, syn_resp#, keep
-    #                 ):
-    #     # clean data
-    #     # TODO: generalize variable names
-    #     # TODO: need to be able to pass variable number of keeps
-    #     # TODO: calculate dewpoint depression at each station using its measured data
-    #     #       I expect that any station with needed data transmits dewpoint: in this
-    #     #       case we need to extrapolate with what data we can lay hands on.
-    #     #       https://iridl.ldeo.columbia.edu/dochelp/QA/Basic/dewpoint.html
-    #     syn_df = pd.json_normalize(syn_resp['STATION'])
-    #     if self.AUTO_CLEAN:
-    #         syn_df = syn_df[syn_df.QC_FLAGGED != "TRUE"]  # this removes any row that was flagged for
-    #                                                       # quality control
-    #         syn_df = syn_df[self.SYNOPTIC_RESPONSE_COLUMNS]  # this removes all columns except the ones in
-    #                                                          # SYNOPTIC_RESPONSE_COLUMNS
-    #     return syn_df
+        # delete dodsrc that was copied to caller dir
+        os.chdir(self.CALLER_DIR)
 
-    # def syn_format(self, syn_resp, keep1, keep2):
-    #     # clean data
-    #     # TODO: generalize variable names
-    #     # TODO: calculate dewpoint depression at each station using its measured data
-    #     #       I expect that any station with needed data transmits dewpoint: in this
-    #     #       case we need to extrapolate with what data we can lay hands on.
-    #     #       https://iridl.ldeo.columbia.edu/dochelp/QA/Basic/dewpoint.html
-    #     syn_df = pd.json_normalize(syn_resp[keep1, keep2])
-    #     if self.AUTO_CLEAN:
-    #         syn_df = syn_df[syn_df.QC_FLAGGED != "TRUE"]  # this removes any row that was flagged for
-    #         # quality control
-    #         syn_df = syn_df[self.SYNOPTIC_RESPONSE_COLUMNS]  # this removes all columns except the ones in
-    #         # SYNOPTIC_RESPONSE_COLUMNS
-    #     return syn_df
+        os.chdir(os.path.expanduser("~") + os.sep)  # go to bash root where auth files were stored
+        # delete GES DISC authentication files if they exist
+        os.chdir(self.CALLER_DIR)  # return to whence we came
+
+    def gesdisc_get_http_data(self, request, http, svcurl):
+        """
+        POSTs formatted JSON WSP requests to the GES DISC endpoint URL and returns the response
+        :param request: JSON object giving a WSP request for a subset of data
+        :param http: URLLIB3 PoolManager object
+        :param svcurl: string giving the URL for the GES DISC subset service endpoint
+        :return: response JSON object giving API response to the request object
+        """
+        hdrs = urllib3.make_headers(basic_auth='Eshreth_of_Athshe:SONOlu4mi__._ne8scence')
+        hdrs['Content-Type'] = 'application/json'
+        hdrs['Accept'] = 'application/json'
+        # hdrs = {'Content-Type': 'application/json',
+        #         'Accept': 'application/json'}
+        data = json.dumps(request)
+        r = http.request('POST', svcurl, body=data, headers=hdrs)
+        response = json.loads(r.data)
+
+        # Check for errors
+        # TODO: update with more robust error handling
+        if response['type'] == 'jsonwsp/fault':
+            if self.logger.level == 10:  # if logger set to DEBUG give full detail of error
+                self.logger.error('API Error: faulty request', stack_info=True, exc_info=True)
+            else:  # otherwise just note that an error happened
+                self.logger.error('API Error: faulty request')
+        return response
+
+    def gesdisc_setup_auth(self, auth_path, auth_fname):
+        """
+        Sets up GES DISC authentication files for a WilE object
+        :param auth_path: string giving path to text file that contains login and password for Earthdata account
+        :param auth_fname: string giving the filename of the aforementioned text file
+        :return: none
+        """
+        # how to make prereq files that you need in order to access GES DISC data like Earthdata's LDAS:
+        # https://disc.gsfc.nasa.gov/information/howto?title=How%20to%20Generate%20Earthdata%20Prerequisite%20Files
+        if not self.GES_DISC_AUTH_SETUP_FLAG:  # if GES DISC authentication hasn't already been set up, do so
+            earthdata_auth = get_dict_from_file(auth_path, auth_fname)
+            earthdata_setup_auth(earthdata_auth, dodsrc_dest=self.CALLER_DIR)  # TODO: ascertain whether caller dir is
+                                                                               #       always appropriate place to put
+                                                                               #       dodsrc document
+            self.GES_DISC_AUTH_SETUP_FLAG = True
+
+    def gesdisc_sort_results(self, results):
+        """
+        Sorts GES DISC API response into documents and download URLs
+        :param results: JSON-formatted object derived from Requests response
+        :return: docs and urls, arrays of strings giving links to documentation or to file URLs, respectively
+        """
+        docs = []
+        urls = []
+
+        for item in results:
+            try:
+                if item['start'] and item['end']: urls.append(item)
+            except:
+                docs.append(item)
+
+        return docs, urls
 
     def pull_everything(self):
         # pull all data sources, including updating historical set
+        self.logger.info("pull_everything() was called; this is still under construction!")
         self.logger.info("Pulling data from ALL built-in sources. Historical data being updated.\n",
                          "This may take several hours!")
 
-    def pull_realtimet(self):
+    def pull_rt(self):
         # pull realtime data
-        self.logger.debug("Pulling realtime data.")
+        self.logger.debug("pull_rt was called. This is still under construction!")
 
     def pull_synoptic_rt(self, auto_clean=True, write=True):
         self.logger.info("Pulling latest synoptic weather data.")
@@ -176,13 +310,10 @@ class wile:
         # TODO: find out how to measure sustained wind speed. Var to get instantaneous is wind_speed
         syn_api_args = {"state": "CA", "units": "metric,speed|kph,pres|mb", "varsoperator": "or",
                         "vars": "air_temp,sea_level_pressure,relative_humidity,dew_point_temperature,soil_temp,precip_accum",
-                        "token": self.SYNOPTIC_API_TOKEN}
+                        "syn_token": self.SYNOPTIC_API_TOKEN}
 
         syn_resp = requests.get(syn_api_rt_req_url, params=syn_api_args)
         syn_resp = syn_resp.json()  # despite it being called json(), this returns a dict object from the requests module
-        # syn_json = json.loads(syn_resp)  # convert the synoptic request to a JSON object from the json module
-
-        # syn_df = self.syn_format(syn_resp, 'STATION')
 
         syn_df = pd.json_normalize(syn_resp['STATION'])
         if self.AUTO_CLEAN:
@@ -196,9 +327,6 @@ class wile:
             # TODO: decompose object to CSV file process
             # TODO: decompose datetime retrieval and concatenation?
             # TODO: consider making syn_csv_filename a global const
-            # now = datetime.now()  # get current datetime
-            # now_str = now.strftime("%m.%d.%Y_%H.%M.%S")  # convert the datetime to a string
-            # syn_csv_filename = "synoptic_request_csv_" + now_str + ".csv"  #
             syn_csv_filename = "synoptic_rt_request.csv"
             os.chdir(self.DATA_RT_DIR)
             syn_df.to_csv(syn_csv_filename)
@@ -208,6 +336,210 @@ class wile:
                 os.startfile(os.path.join(os.getcwd(), syn_csv_filename))
             os.chdir(self.CALLER_DIR)
 
+    def pull_ldas_rt(self):
+        """
+        Pulls most recent LDAS data from GES DISC Earthdata using authentication data stored in a text file at a location defined in __init__
+        """
+        
+
+
+        # Set up the GES DISC authentication files
+        earthdata_auth = get_dict_from_file(self.GES_DISC_AUTH_PATH, self.GES_DISC_AUTH_FNAME)
+
+        urs = 'urs.earthdata.nasa.gov'  # Earthdata URL to call for authentication
+        
+        homeDir = os.path.expanduser("~") + os.sep
+        print("Obtained homeDir: " + homeDir)
+
+        with open(homeDir + '.netrc', 'w') as file:
+            print("Attempting to create .netrc file...")
+            file.write('machine {} login {} password {}'.format(urs, earthdata_auth['login'], earthdata_auth['password']))
+            file.close()
+        with open(homeDir + '.urs_cookies', 'w') as file:
+            print("Attempting to create .urs_cookies file...")
+            file.write('')
+            file.close()
+        with open(homeDir + '.dodsrc', 'w') as file:
+            print("Attempting to create .dodsrc file...")
+            file.write('HTTP.COOKIEJAR={}.urs_cookies\n'.format(homeDir))
+            file.write('HTTP.NETRC={}.netrc'.format(homeDir))
+            file.close()
+
+        print('Saved .netrc, .urs_cookies, and .dodsrc to:', homeDir)
+
+
+
+        # Set appropriate permissions for Linux/macOS
+        if platform.system() != "Windows":
+            Popen('chmod og-rw ~/.netrc', shell=True)
+        else:
+            # Copy dodsrc to working directory in Windows
+            shutil.copy2(homeDir + '.dodsrc', os.getcwd())
+            print('Copied .dodsrc to:', os.getcwd())
+
+        # This method POSTs formatted JSON WSP requests to the GES DISC endpoint URL and returns the response
+        def get_http_data(request):
+
+            hdrs = {}
+            hdrs['Content-Type'] = 'application/json'
+            hdrs['Accept'] = 'application/json'
+            data = json.dumps(request)
+            r = http.request('POST', svcurl, body=data, headers=hdrs)
+            response = json.loads(r.data)
+
+            # Check for errors
+            if response['type'] == 'jsonwsp/fault':
+                print('API Error: faulty request')
+            return response
+
+        # Create a urllib PoolManager instance to make requests.
+        http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',
+                                   ca_certs=certifi.where())
+
+        # Set the URL for the GES DISC subset service endpoint
+        svcurl = 'https://disc.gsfc.nasa.gov/service/subset/jsonwsp'
+
+        # Define the parameters for the data subset
+        product = 'ML2T_004'
+        begTime = '2015-08-01T00:00:00.000Z'
+        endTime = '2015-08-03T23:59:59.999Z'
+        minlon = -180.0
+        maxlon = 180.0
+        minlat = -30.0
+        maxlat = 30.0
+        varNames = ['/HDFEOS/SWATHS/Temperature/Data Fields/Temperature',
+                    '/HDFEOS/SWATHS/Temperature/Data Fields/TemperaturePrecision',
+                    '/HDFEOS/SWATHS/Temperature/Data Fields/Quality']
+
+        # The dimension slice will be for pressure levels between 1000 and 100 hPa
+        dimName = '/HDFEOS/SWATHS/Temperature/nLevels'
+        dimVals = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+        dimSlice = []
+        for i in range(len(dimVals)):
+            dimSlice.append({'dimensionId': dimName, 'dimensionValue': dimVals[i]})
+
+        # Construct JSON WSP request for API method: subset
+        subset_request = {
+            'methodname': 'subset',
+            'type': 'jsonwsp/request',
+            'version': '1.0',
+            'args': {
+                'role': 'subset',
+                'start': begTime,
+                'end': endTime,
+                'box': [minlon, minlat, maxlon, maxlat],
+                'crop': True,
+                'data': [{'datasetId': product,
+                          'variable': varNames[0],
+                          'slice': dimSlice
+                          },
+                         {'datasetId': product,
+                          'variable': varNames[1],
+                          'slice': dimSlice
+                          },
+                         {'datasetId': product,
+                          'variable': varNames[2]
+                          }]
+            }
+        }
+
+        # Submit the subset request to the GES DISC Server
+        response = get_http_data(subset_request)
+
+        # Report the JobID and initial status
+        myJobId = response['result']['jobId']
+        print('Job ID: ' + myJobId)
+        print('Job status: ' + response['result']['Status'])
+
+        # Construct JSON WSP request for API method: GetStatus
+        status_request = {
+            'methodname': 'GetStatus',
+            'version': '1.0',
+            'type': 'jsonwsp/request',
+            'args': {'jobId': myJobId}
+        }
+
+        # Check on the job status after a brief nap
+        while response['result']['Status'] in ['Accepted', 'Running']:
+            sleep(5)
+            response = get_http_data(status_request)
+            status = response['result']['Status']
+            percent = response['result']['PercentCompleted']
+            print('Job status: %s (%d%c complete)' % (status, percent, '%'))
+
+        if response['result']['Status'] == 'Succeeded':
+            print('Job Finished:  %s' % response['result']['message'])
+        else:
+            print('Job Failed: %s' % response['fault']['code'])
+            sys.exit(1)
+
+        # Use the API method named GetResult. This method will return the URLs along with three additional attributes: a label,
+        # plus the beginning and ending time stamps for that particular data granule. The label serves as the filename for the
+        # downloaded subsets.
+
+        # Construct JSON WSP request for API method: GetResult
+        batchsize = 20
+        results_request = {
+            'methodname': 'GetResult',
+            'version': '1.0',
+            'type': 'jsonwsp/request',
+            'args': {
+                'jobId': myJobId,
+                'count': batchsize,
+                'startIndex': 0
+            }
+        }
+
+        # Retrieve the results in JSON in multiple batches
+        # Initialize variables, then submit the first GetResults request
+        # Add the results from this batch to the list and increment the count
+        results = []
+        count = 0
+        response = get_http_data(results_request)
+        count = count + response['result']['itemsPerPage']
+        results.extend(response['result']['items'])
+
+        # Increment the startIndex and keep asking for more results until we have them all
+        total = response['result']['totalResults']
+        while count < total:
+            results_request['args']['startIndex'] += batchsize
+            response = get_http_data(results_request)
+            count = count + response['result']['itemsPerPage']
+            results.extend(response['result']['items'])
+
+        # Check on the bookkeeping
+        print('Retrieved %d out of %d expected items' % (len(results), total))
+
+        # Sort the results into documents and URLs
+        docs = []
+        urls = []
+        for item in results:
+            try:
+                if item['start'] and item['end']: urls.append(item)
+            except:
+                docs.append(item)
+
+        # Print out the documentation links, but do not download them
+        print('\nDocumentation:')
+        for item in docs: print(item['label'] + ': ' + item['link'])
+
+        print(os.getcwd())
+
+        # Use the requests library to submit the HTTP_Services URLs and write out the results.
+        print('\nHTTP_services output:')
+        for item in urls:
+            URL = item['link']
+            result = requests.get(URL)
+            try:
+                result.raise_for_status()
+                outfn = item['label']
+                f = open(outfn, 'wb')
+                f.write(result.content)
+                f.close()
+                print(outfn)
+            except:
+                print('Error! Status code is %d for this URL:\n%s' % (result.status.code, URL))
+                print('Help for downloading data is at https://disc.gsfc.nasa.gov/information/documents?title=Data%20Access')
 
     def pull_historic(self):
         # pull historic data
@@ -218,16 +550,23 @@ class wile:
         # pull synoptic data as far back as arg
         self.logger.debug("pulling synoptic timeseries data \n" +
                           "NOTE: this function isn't complete and doesn't work yet! \n" +
-                          "WARNING: it may take up to several hours to fulfill a timeseries request!")
+                          "WARNING: it may take up to several hours to fulfill a timeseries request longer than one day!")
 
         SYNOPTIC_HIST_FILTER = "stations/timeseries"  # filter for timeseries data TODO: refactor so that this is function argument
-        # SYN_HIST_START = "199001010000"  # earliest time to seek to is 1990/01/01, 00:00. Most data will be nowhere near that.
-        SYN_HIST_START = "202308050000"
+        # SYN_HIST_START not needed
+        if self.logger.level == 10:  # if logging level set to debug, only retrieve a little historic data
+            syn_hist_start_dt = datetime.now()
+            syn_hist_start_dt -= timedelta(hours=3)  # only go back a bit from now
+            SYN_HIST_START = syn_hist_start_dt.strftime(self.SYN_TIME_FORMAT)
+        else:  # otherwise go waaaay back
+            SYN_HIST_START = "199001010000"  # earliest time to seek to is 1990/01/01, 00:00.
+                                             # Most data will be nowhere near that.
+                                             # TODO: make this function arg.
 
         # TODO: these might need to be function args
         syn_api_args = {"state": "CA", "units": "metric,speed|kph,pres|mb", "varsoperator": "or",
                         "vars": "air_temp,sea_level_pressure,relative_humidity,dew_point_temperature,soil_temp,precip_accum",
-                        "token": self.SYNOPTIC_API_TOKEN}  # TODO: this might need to go someplace else
+                        "syn_token": self.SYNOPTIC_API_TOKEN}  # TODO: this might need to go someplace else
         syn_hist_end = datetime.now().strftime(self.SYN_TIME_FORMAT)  # string giving current datetime; pull up to the absolute most recent data
         syn_api_hist_req_url = os.path.join(self.SYNOPTIC_API_ROOT, SYNOPTIC_HIST_FILTER)  # URL to request synoptic data
         syn_hist_args = syn_api_args
@@ -238,7 +577,7 @@ class wile:
         chunk_end_dt = datetime.strptime(chunk_range_end, self.SYN_TIME_FORMAT)  # datetime object giving the end of the chunk timerange
         chunk_end_dt -= timedelta(hours=1)  # run the chunk end dt (but not the string!) back 1 day
         chunk_range_start = chunk_end_dt.strftime(self.SYN_TIME_FORMAT)  # datetime object giving the start of the chunk timerange
-        chunk_start_dt = datetime.strptime(chunk_range_start, self.SYN_TIME_FORMAT)  # string; 1 day before chunk_range_end
+        # chunk_start_dt not needed
 
         start_dt = datetime.strptime(SYN_HIST_START, self.SYN_TIME_FORMAT)  # datetime giving the very earliest date to seek to
         range_delta = chunk_end_dt - start_dt  # time difference in complete target range
@@ -246,49 +585,22 @@ class wile:
 
         syn_hist_args["START"] = chunk_range_start
         syn_hist_args["END"] = chunk_range_end
-        syn_resp = requests.get(syn_api_hist_req_url, params=syn_hist_args)
-        syn_resp = syn_resp.json()
-        # syn_hist_df = pd.json_normalize(syn_resp)  # ["STATION", "OBSERVATIONS"]
-        # syn_hist_df = self.syn_format(syn_resp, "STATION", "OBSERVATIONS")
-        # syn_hist_df = self.syn_format(syn_resp, "STATION")
-        syn_hist_df = self.syn_format(syn_resp)
-        chunk_df = syn_hist_df  # this will be used to store each chunk; initialize as a dataframe to save time
-
-        # https://stackoverflow.com/a/70639094
-        parser = pd.io.parsers.base_parser.ParserBase(
-            {'usecols': None})  # this will be used to make sure every response column name is unique
+        syn_resp = requests.get(syn_api_hist_req_url, params=syn_hist_args, headers={'Accept': 'application/json'})
+        syn_dict = syn_resp.json()  # convert to dict of dicts
 
         self.logger.debug("start={}, end={} \n\nbeginning while loop:".format(SYN_HIST_START, syn_hist_end))
 
         while range_delta > min_delta:
-
-            self.logger.debug("iteration start: chunk start={}, chunk end={}".format(chunk_range_start,
-                                                                                     chunk_range_end))
+            self.logger.debug("iterating: chunk start={}, chunk end={}".format(chunk_range_start,
+                                                                               chunk_range_end))
 
             # construct timeseries query
             syn_hist_args["START"] = chunk_range_start
             syn_hist_args["END"] = chunk_range_end
-            syn_resp = requests.get(syn_api_hist_req_url, params=syn_hist_args)  # send query
-            syn_resp = syn_resp.json()  # despite it being called json(), this returns a dict object from the requests module
-            # chunk_df = self.syn_format(syn_resp, "STATION", "OBSERVATIONS")  # convert query for this chunk into a dataframe
-            # chunk_df = self.syn_format(syn_resp, "STATION")  # convert query for this chunk into a dataframe
-            chunk_df = self.syn_format(syn_resp)  # convert query for this chunk into a dataframe
-
-            # if self.logger.level == 10:  # if set to debug print synoptic args
-            #     for line in syn_hist_args:
-            #         self.logger.debug(line)
-
-            # merge this chunk into the main synoptic historic dataframe
-            # implemented method to do so is by pandas's .concat, but this breaks when a DF has duplicate column names
-            # so we need to first make duplicate columns names chunk_df unique ("deduplicate")
-            for df in [syn_hist_df, chunk_df]:
-                df.columns = parser._maybe_dedup_names(df.columns)
-
-            # then concatenate the two dataframes
-            # http: // pandas.pydata.org / pandas - docs / stable / reference / api / pandas.concat.html
-            # https://stackoverflow.com/a/28097336
-            # TODO: this appears to sometimes drop data or throw errors. Make more robust.
-            pd.concat([syn_hist_df, chunk_df], axis=0, ignore_index=True)
+            chunk_resp = requests.get(syn_api_hist_req_url, params=syn_hist_args)  # send request and store response
+                                                                                   # for this chunk
+            chunk_dict = chunk_resp.json()
+            syn_dict.update(chunk_dict)
 
             # update chunk boundaries and distance from next chunk to the earliest date
             chunk_range_end = chunk_range_start
@@ -297,11 +609,19 @@ class wile:
             chunk_range_start = chunk_end_dt.strftime(self.SYN_TIME_FORMAT)
             range_delta = chunk_end_dt - start_dt
 
-            # self.logger.debug("iteration end: chunk start={}, chunk end={}".format(chunk_range_start,
-            #                                                                        chunk_range_end))
-            self.logger.debug("syn_hist_df is {}kb".format(sys_getsizeof(syn_hist_df)/1000))
+            self.logger.debug("retrieved one chunk")
+
+        # if set to debug, save raw response as text file
+        if self.logger.level == 10:
+            os.chdir(self.DEBUG_DIR)
+            with open("synoptic historic raw response.txt", 'w') as f:
+                f.write(json.dumps(syn_dict, indent=4))
 
         os.chdir(self.DATA_HIST_DIR)
+
+        # convert JSON to pandas df
+        syn_hist_df = pd.json_normalize(syn_dict['STATION'])
+
 
         now = datetime.now()  # get current datetime
         now_str = now.strftime("%m.%d.%Y_%H.%M.%S")  # convert the datetime to a string
@@ -311,8 +631,5 @@ class wile:
         self.logger.info("saved historical measurements to csv\n" +
                          "filename = {}\n".format(syn_hist_filename) +
                          "path = {}\n".format(os.getcwd()))
-        
-        if self.logger.level == 10:  # if set to debug, open the historic csv to be sure it was retrieved properly
-            os.startfile(os.path.join(os.getcwd(), syn_hist_filename))
 
         os.chdir(self.CALLER_DIR)
