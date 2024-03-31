@@ -219,6 +219,8 @@ class wile:
 
         self.logger.info("beep beep settin up the tootle toot:\n" + "wile object instantiated")
 
+
+
     # TODO
     def __del__(self):
         self.logger.info("beep boop, takin down the tootle toot")
@@ -231,6 +233,8 @@ class wile:
         os.chdir(os.path.expanduser("~") + os.sep)  # go to bash root where auth files were stored
         # delete GES DISC authentication files if they exist
         os.chdir(self.CALLER_DIR)  # return to whence we came
+
+
 
     def gesdisc_get_http_data(self, request, http, svcurl):
         """
@@ -256,6 +260,8 @@ class wile:
                 self.logger.error('API Error: faulty request')
         return response
 
+
+
     def gesdisc_setup_auth(self, auth_path, auth_fname):
         """
         Sets up GES DISC authentication files for a WilE object
@@ -271,6 +277,8 @@ class wile:
                                                                                #       always appropriate place to put
                                                                                #       dodsrc document
             self.GES_DISC_AUTH_SETUP_FLAG = True
+
+
 
     def gesdisc_sort_results(self, results):
         """
@@ -288,6 +296,8 @@ class wile:
                 docs.append(item)
 
         return docs, urls
+
+
 
     # TODO
     def pull_everything(self):
@@ -350,8 +360,6 @@ class wile:
         Pulls most recent LDAS data from GES DISC Earthdata using authentication data stored in a text file at a
         location defined in __init__
         """
-        
-
 
         # Set up the GES DISC authentication files
         earthdata_auth = get_dict_from_file(self.GES_DISC_AUTH_PATH, self.GES_DISC_AUTH_FNAME)
@@ -467,6 +475,7 @@ class wile:
         self.info.logger('Job ID: ' + myJobId)
         self.info.logger('Job status: ' + response['result']['Status'])
 
+        # TODO: extract from file?
         # Construct JSON WSP request for API method: GetStatus
         status_request = {
             'methodname': 'GetStatus',
@@ -489,9 +498,9 @@ class wile:
             self.logger.error('Job Failed: %s' % response['fault']['code'])
             sys.exit(1)
 
-        # Use the API method named GetResult. This method will return the URLs along with three additional attributes: a label,
-        # plus the beginning and ending time stamps for that particular data granule. The label serves as the filename for the
-        # downloaded subsets.
+        # Use the API method named GetResult. This method will return the URLs along with three additional attributes:
+        # a label, plus the beginning and ending time stamps for that particular data granule. The label serves as the
+        # filename for the downloaded subsets.
 
         # Construct JSON WSP request for API method: GetResult
         # TODO: extract from file?
@@ -533,15 +542,15 @@ class wile:
         for item in results:
             try:
                 if item['start'] and item['end']: urls.append(item)
+                self.logger.info("Read URLː %s" % item)
             except:
                 docs.append(item)
 
         # Print out the documentation links, but do not download them
-        print('\nDocumentation:')
         self.logger.info('\nSee GES DISC documentation:')
-        for item in docs: print(item['label'] + ': ' + item['link'])
+        for item in docs: self.logger.info(item['label'] + ': ' + item['link'])
 
-        self.logger.info(os.getcwd())
+        self.logger.info("Left files in " + os.getcwd())
 
         # Use the requests library to submit the HTTP_Services URLs and write out the results.
         self.logger.info('\nDownloading data:')
@@ -559,10 +568,14 @@ class wile:
                 self.logger.error('Error! Status code is %d for this URL:\n%s' % (result.status.code, URL))
                 self.logger.info('Help for downloading data is at https://disc.gsfc.nasa.gov/information/documents?title=Data%20Access')
 
+
+
     # TODO
     def pull_historic(self):
         # pull historic data
         self.logger.debug("pull_historic() was called")
+
+
 
     def pull_synoptic_hist(self):
         # TODO
