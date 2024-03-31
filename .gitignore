@@ -1,6 +1,7 @@
 ﻿# Project-specific ignores
 data/
 debug/
+outputs/output_log.txt
 /.vs/WilE/v17
 /.vs/WilE/FileContentIndex
 
