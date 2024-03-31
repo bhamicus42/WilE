@@ -2,25 +2,26 @@
 # Last editor: Ben Hoffman
 # Contact: blhoff97@gmail.com
 
-import os  # for operating on logs
-           # for concatenating strings to make a URL
-           # for changing directories, such as when working with data
-           # for getting current working directory
-           # TODO: make the directory generation more robust: https://linuxize.com/post/python-get-change-current-working-directory/
-import logging
-import sys
-from datetime import datetime, timedelta  # to mark files with the datetime their data was pulled and to iterate across time ranges
-import pandas as pd
-
 # additional modules needed for working with Earthdata LDAS
 import json
-import urllib3
-import certifi
-import requests
-from time import sleep
-from subprocess import Popen
+# for concatenating strings to make a URL
+# for changing directories, such as when working with data
+# for getting current working directory
+# TODO: make the directory generation more robust: https://linuxize.com/post/python-get-change-current-working-directory/
+import logging
+import os  # for operating on logs
 import platform
 import shutil
+import sys
+from datetime import datetime, \
+    timedelta  # to mark files with the datetime their data was pulled and to iterate across time ranges
+from subprocess import Popen
+from time import sleep
+
+import certifi
+import pandas as pd
+import requests
+import urllib3
 
 
 def dir_return(d):
@@ -299,6 +300,69 @@ class wile:
 
 
 
+    def gesdisc_convert_to_csv(self, fn, findDir='', targetDir='', destDir='', deleteOriginal=False):
+        """
+        Converts a file from the GES DISC API to a CSV file. At present, can convert HDF files with the following
+        extensions:
+        .hdf, .h4, .hdf4, .he2, .h5, .hdf5, .he5
+        :param fn: string giving the filename of the file to convert. Error logged if empty.
+        :param findDir: string giving the directory to find the file in. If empty, defaults to the current working
+                        directory.
+        :param targetDir: string giving the directory to put the file in. If empty, defaults to the current working
+                          directory.
+        :param destDir: string giving the directory to move the file to after conversion. If empty, defaults to the
+                        current working directory.
+        :param deleteOriginal: boolean giving whether to delete the original file after conversion. Default False.
+        :return fext: string giving the original extension of the file
+        """
+
+        if fn == '':
+            self.logger.error("Error: filename is empty")
+            return ''
+
+        # get file extension
+        fext = fn.split('.')[-1]
+
+        # if findDir and/or targetDir are empty, set to current working directory
+        if findDir == '':
+            findDir = os.getcwd()
+        if targetDir == '':
+            targetDir = os.getcwd()
+
+        # if findDir is not the current working directory, change to it
+        if os.getcwd() != findDir:
+            os.chdir(findDir)
+
+        #
+        hierarchical_data_extensions = '.hdf', '.h4', '.hdf4', '.he2', '.h5', '.hdf5', '.he5' # extensions of hierarchical data files
+        if any(hext.lower() == fext.lower() for hext in hierarchical_data_extensions):
+            self.logger.info("Converting {} to CSV from a hierarchical data format".format(fn))
+
+            # TODO: consider adding chunksize argument to pd.read_hdf
+            # read the file
+            df = pd.read_hdf(fn)
+
+            # convert to CSV
+            if os.getcwd() != targetDir:
+                os.chdir(targetDir)
+            df.to_csv(fn + ".csv")
+            self.logger.info("Called pd.read_hdf and pd.to_csv to convert {} to CSV".format(fn))
+
+        if deleteOriginal:
+            os.remove(fn)
+            self.logger.info("Deleted original file {}".format(fn))
+
+        if destDir != '':
+            if os.getcwd() != destDir:
+                os.rename(fn, os.path.join(destDir, fn))
+                self.logger.info("Moved file to {}".format(destDir))
+
+        return fext
+
+
+
+
+
     # TODO
     def pull_everything(self):
         # pull all data sources, including updating historical set
@@ -386,7 +450,7 @@ class wile:
             self.logger.info("Wrote .dodsrc file")
             file.close()
 
-        self.logger.info('Saved .netrc, .urs_cookies, and .dodsrc to:', homeDir)
+        self.logger.info('Saved .netrc, .urs_cookies, and .dodsrc to:' + homeDir)
 
 
 
@@ -472,8 +536,8 @@ class wile:
 
         # Report the JobID and initial status
         myJobId = response['result']['jobId']
-        self.info.logger('Job ID: ' + myJobId)
-        self.info.logger('Job status: ' + response['result']['Status'])
+        self.logger.info('Job ID: ' + myJobId)
+        self.logger.info('Job status: ' + response['result']['Status'])
 
         # TODO: extract from file?
         # Construct JSON WSP request for API method: GetStatus
@@ -542,7 +606,8 @@ class wile:
         for item in results:
             try:
                 if item['start'] and item['end']: urls.append(item)
-                self.logger.info("Read URLː %s" % item)
+                # self.logger.info("Read URLː %s" % item)
+            #     TODO: logger.info can't print characters that get received in the string; find out why and fix
             except:
                 docs.append(item)
 
@@ -564,6 +629,11 @@ class wile:
                 f.write(result.content)
                 f.close()
                 self.logger.info("Output filename: " + outfn)
+                self.logger.info("Moving file to tmp directory")
+                # os.rename(outfn, os.path.join(self.DATA_TMP_DIR, outfn)) # move the file to the tmp directory  # TODO: adjust so that file isn't overwritten unless directed
+                os.replace(outfn, os.path.join(self.DATA_TMP_DIR, outfn)) # move the file to the tmp directory
+                self.logger.info("Converting file to CSV")
+                self.gesdisc_convert_to_csv(outfn, self.DATA_TMP_DIR, self.DATA_DIR, deleteOriginal=True)
             except:
                 self.logger.error('Error! Status code is %d for this URL:\n%s' % (result.status.code, URL))
                 self.logger.info('Help for downloading data is at https://disc.gsfc.nasa.gov/information/documents?title=Data%20Access')
