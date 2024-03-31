@@ -1,3 +1,4 @@
-2024-03-27 18:20:53,077:__init__:G:\g\WilE
-2024-03-27 18:20:53,078:__init__:beep beep settin up the tootle toot:
+2024-03-30 16:47:57,896:__init__:C:\g\WilE
+2024-03-30 16:47:57,896:__init__:beep beep settin up the tootle toot:
 wile object instantiated
+2024-03-30 16:51:31,267:__del__:beep boop, takin down the tootle toot

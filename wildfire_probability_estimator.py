@@ -219,6 +219,7 @@ class wile:
 
         self.logger.info("beep beep settin up the tootle toot:\n" + "wile object instantiated")
 
+    # TODO
     def __del__(self):
         self.logger.info("beep boop, takin down the tootle toot")
 
@@ -242,8 +243,6 @@ class wile:
         hdrs = urllib3.make_headers(basic_auth='Eshreth_of_Athshe:SONOlu4mi__._ne8scence')
         hdrs['Content-Type'] = 'application/json'
         hdrs['Accept'] = 'application/json'
-        # hdrs = {'Content-Type': 'application/json',
-        #         'Accept': 'application/json'}
         data = json.dumps(request)
         r = http.request('POST', svcurl, body=data, headers=hdrs)
         response = json.loads(r.data)
@@ -290,17 +289,27 @@ class wile:
 
         return docs, urls
 
+    # TODO
     def pull_everything(self):
         # pull all data sources, including updating historical set
         self.logger.info("pull_everything() was called; this is still under construction!")
         self.logger.info("Pulling data from ALL built-in sources. Historical data being updated.\n",
                          "This may take several hours!")
 
+    # TODO
     def pull_rt(self):
         # pull realtime data
         self.logger.debug("pull_rt was called. This is still under construction!")
 
     def pull_synoptic_rt(self, auto_clean=True, write=True):
+        """
+        Pulls the latest weather data from the Synoptic API
+        :param auto_clean: whether to instruct the API to remove any data that was flagged for quality control;
+                           default True
+        :param write: whether to write the response to a CSV file; default True
+        :return: none
+        """
+
         self.logger.info("Pulling latest synoptic weather data.")
         self.logger.debug("Auto_clean = {} and write = {}".format(auto_clean, write))
 
@@ -338,7 +347,8 @@ class wile:
 
     def pull_ldas_rt(self):
         """
-        Pulls most recent LDAS data from GES DISC Earthdata using authentication data stored in a text file at a location defined in __init__
+        Pulls most recent LDAS data from GES DISC Earthdata using authentication data stored in a text file at a
+        location defined in __init__
         """
         
 
@@ -349,23 +359,26 @@ class wile:
         urs = 'urs.earthdata.nasa.gov'  # Earthdata URL to call for authentication
         
         homeDir = os.path.expanduser("~") + os.sep
-        print("Obtained homeDir: " + homeDir)
+        self.logger.info("Obtained homeDir: " + homeDir)
 
         with open(homeDir + '.netrc', 'w') as file:
-            print("Attempting to create .netrc file...")
+            self.logger.info("Attempting to create .netrc file...")
             file.write('machine {} login {} password {}'.format(urs, earthdata_auth['login'], earthdata_auth['password']))
+            self.logger.info("Wrote .netrc file")
             file.close()
         with open(homeDir + '.urs_cookies', 'w') as file:
-            print("Attempting to create .urs_cookies file...")
+            self.logger.info("Attempting to create .urs_cookies file...")
             file.write('')
+            self.logger.info("Wrote .urs_cookies file")
             file.close()
         with open(homeDir + '.dodsrc', 'w') as file:
-            print("Attempting to create .dodsrc file...")
+            self.logger.info("Attempting to create .dodsrc file...")
             file.write('HTTP.COOKIEJAR={}.urs_cookies\n'.format(homeDir))
             file.write('HTTP.NETRC={}.netrc'.format(homeDir))
+            self.logger.info("Wrote .dodsrc file")
             file.close()
 
-        print('Saved .netrc, .urs_cookies, and .dodsrc to:', homeDir)
+        self.logger.info('Saved .netrc, .urs_cookies, and .dodsrc to:', homeDir)
 
 
 
@@ -390,6 +403,7 @@ class wile:
             # Check for errors
             if response['type'] == 'jsonwsp/fault':
                 print('API Error: faulty request')
+                self.logger.error('API Error: faulty request')
             return response
 
         # Create a urllib PoolManager instance to make requests.
@@ -411,6 +425,7 @@ class wile:
                     '/HDFEOS/SWATHS/Temperature/Data Fields/TemperaturePrecision',
                     '/HDFEOS/SWATHS/Temperature/Data Fields/Quality']
 
+        # TODO: I have no idea what the hell this is doing      -Ben
         # The dimension slice will be for pressure levels between 1000 and 100 hPa
         dimName = '/HDFEOS/SWATHS/Temperature/nLevels'
         dimVals = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
@@ -418,6 +433,7 @@ class wile:
         for i in range(len(dimVals)):
             dimSlice.append({'dimensionId': dimName, 'dimensionValue': dimVals[i]})
 
+        # TODO: extract this from a file?
         # Construct JSON WSP request for API method: subset
         subset_request = {
             'methodname': 'subset',
@@ -448,8 +464,8 @@ class wile:
 
         # Report the JobID and initial status
         myJobId = response['result']['jobId']
-        print('Job ID: ' + myJobId)
-        print('Job status: ' + response['result']['Status'])
+        self.info.logger('Job ID: ' + myJobId)
+        self.info.logger('Job status: ' + response['result']['Status'])
 
         # Construct JSON WSP request for API method: GetStatus
         status_request = {
@@ -465,12 +481,12 @@ class wile:
             response = get_http_data(status_request)
             status = response['result']['Status']
             percent = response['result']['PercentCompleted']
-            print('Job status: %s (%d%c complete)' % (status, percent, '%'))
+            self.logger.info('Job status: %s (%d%c complete)' % (status, percent, '%'))
 
         if response['result']['Status'] == 'Succeeded':
-            print('Job Finished:  %s' % response['result']['message'])
+            self.logger.info('Job Finished:  %s' % response['result']['message'])
         else:
-            print('Job Failed: %s' % response['fault']['code'])
+            self.logger.error('Job Failed: %s' % response['fault']['code'])
             sys.exit(1)
 
         # Use the API method named GetResult. This method will return the URLs along with three additional attributes: a label,
@@ -478,6 +494,7 @@ class wile:
         # downloaded subsets.
 
         # Construct JSON WSP request for API method: GetResult
+        # TODO: extract from file?
         batchsize = 20
         results_request = {
             'methodname': 'GetResult',
@@ -508,7 +525,7 @@ class wile:
             results.extend(response['result']['items'])
 
         # Check on the bookkeeping
-        print('Retrieved %d out of %d expected items' % (len(results), total))
+        self.logger.info('Retrieved %d out of %d expected items' % (len(results), total))
 
         # Sort the results into documents and URLs
         docs = []
@@ -521,12 +538,13 @@ class wile:
 
         # Print out the documentation links, but do not download them
         print('\nDocumentation:')
+        self.logger.info('\nSee GES DISC documentation:')
         for item in docs: print(item['label'] + ': ' + item['link'])
 
-        print(os.getcwd())
+        self.logger.info(os.getcwd())
 
         # Use the requests library to submit the HTTP_Services URLs and write out the results.
-        print('\nHTTP_services output:')
+        self.logger.info('\nDownloading data:')
         for item in urls:
             URL = item['link']
             result = requests.get(URL)
@@ -536,11 +554,12 @@ class wile:
                 f = open(outfn, 'wb')
                 f.write(result.content)
                 f.close()
-                print(outfn)
+                self.logger.info("Output filename: " + outfn)
             except:
-                print('Error! Status code is %d for this URL:\n%s' % (result.status.code, URL))
-                print('Help for downloading data is at https://disc.gsfc.nasa.gov/information/documents?title=Data%20Access')
+                self.logger.error('Error! Status code is %d for this URL:\n%s' % (result.status.code, URL))
+                self.logger.info('Help for downloading data is at https://disc.gsfc.nasa.gov/information/documents?title=Data%20Access')
 
+    # TODO
     def pull_historic(self):
         # pull historic data
         self.logger.debug("pull_historic() was called")
