@@ -88,47 +88,16 @@ def earthdata_setup_auth(caller, auth, cert_dest, urs='urs.Earthdata.nasa.gov'):
         file.write('')
         caller.logger.info("Wrote .urs_cookies file")
 
-    caller.logger.info('Saved .netrc, .urs_cookies, and .dodsrc to:' + homeDir)
+    caller.logger.info('Saved .netrc, .urs_cookies, and .dodsrc to:' + cert_dest)
 
     # Set appropriate permissions for Linux/macOS
     if platform.system() != "Windows":
         Popen('chmod og-rw ~/.netrc', shell=True)
     else:
-        # Copy dodsrc to working directory in Windows
-        shutil.copy2(auth_dir + '.dodsrc', cert_dest)
-        caller.logger.info('Copied .dodsrc to:', os.getcwd())
-
-    ##########################################################################
-
-    homeDir = os.path.expanduser("~") + os.sep
-    caller.logger.info("Obtained homeDir: " + homeDir)
-
-    with open(homeDir + '.netrc', 'w') as file:
-        caller.logger.info("Attempting to create .netrc file...")
-        file.write('machine {} login {} password {}'.format(urs, earthdata_auth['login'], earthdata_auth['password']))
-        caller.logger.info("Wrote .netrc file")
-        file.close()
-    with open(homeDir + '.dodsrc', 'w') as file:
-        caller.logger.info("Attempting to create .dodsrc file...")
-        file.write('HTTP.COOKIEJAR={}.urs_cookies\n'.format(homeDir))
-        file.write('HTTP.NETRC={}.netrc'.format(homeDir))
-        caller.logger.info("Wrote .dodsrc file")
-        file.close()
-    with open(homeDir + '.urs_cookies', 'w') as file:
-        caller.logger.info("Attempting to create .urs_cookies file...")
-        file.write('')
-        caller.logger.info("Wrote .urs_cookies file")
-        file.close()
-
-    caller.logger.info('Saved .netrc, .urs_cookies, and .dodsrc to:' + homeDir)
-
-    # Set appropriate permissions for Linux/macOS
-    if platform.system() != "Windows":
-        Popen('chmod og-rw ~/.netrc', shell=True)
-    else:
-        # Copy dodsrc to working directory in Windows
-        shutil.copy2(homeDir + '.dodsrc', os.getcwd())
-        print('Copied .dodsrc to:', os.getcwd())
+        # Copy dodsrc to working directory in Windows if the two aren't the same place
+        if auth_dir != cert_dest:
+            shutil.copy2(auth_dir + '.dodsrc', cert_dest)
+            caller.logger.info('Copied .dodsrc to:', os.getcwd())
 
     caller.GES_DISC_AUTH_SETUP_FLAG = True
     
@@ -530,7 +499,7 @@ class wile:
             #       using a credential file and documenting it as a necessity for the script to run.
             gesd_isc_auth = {'login': 'Eshreth_of_Athshe', 'password': 'SONOlu4mi__._ne8scence'}
             # place certificates in the home directory (C:/ for windows)
-            self.earthdata_setup_auth(self, gesd_isc_auth, os.path.expanduser("~") + os.sep)
+            earthdata_setup_auth(self, gesd_isc_auth, os.path.expanduser("~") + os.sep)
 
 
         # This method POSTs formatted JSON WSP requests to the GES DISC endpoint URL and returns the response
