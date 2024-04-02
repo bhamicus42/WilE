@@ -1,4 +1,4 @@
-﻿# Project-specific ignores
+# Project-specific ignores
 data/
 debug/
 outputs/output_log.txt
@@ -129,10 +129,11 @@ celerybeat.pid
 *.sage.py
 
 # Environments
+# TEMPORARY TEST: keeping venv to try to improve synchronicity
 .env
-.venv
+#.venv
 env/
-venv/
+# venv/
 ENV/
 env.bak/
 venv.bak/

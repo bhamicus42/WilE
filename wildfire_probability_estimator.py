@@ -9,7 +9,7 @@ import json
 # for getting current working directory
 # TODO: make the directory generation more robust: https://linuxize.com/post/python-get-change-current-working-directory/
 import logging
-import os  # for operating on logs
+import os
 import platform
 import shutil
 import sys
@@ -18,10 +18,18 @@ from datetime import datetime, \
 from subprocess import Popen
 from time import sleep
 
-import certifi
-import pandas as pd
+# imports for pulling GES DISC data
+import certifi # from certifi import where # for SSL certificate verification
 import requests
 import urllib3
+
+# for converting the he5 files from GES DISC to CSV
+# import pytables
+import tables
+
+# other imports
+import pandas as pd
+    # NOTE: be sure to have PyTables installed, pd is used to convert he5 to CSV, which uses tables dependencies
 
 
 def dir_return(d):
@@ -322,38 +330,53 @@ class wile:
 
         # get file extension
         fext = fn.split('.')[-1]
+        self.logger.debug("File extension to convert from is: " + fext)
+
+        # TODO: this code might be more memory heavy than CPU heavy; consider if it's worth it to save the cwd
+        # Current working directory is used several times; find it once so we don't have to keep spending CPU cycles
+        cwd = os.getcwd()
 
         # if findDir and/or targetDir are empty, set to current working directory
+        findArgEmpty = False
+        targetArgEmpty = False
         if findDir == '':
-            findDir = os.getcwd()
+            findDir = cwd
+            findArgEmpty = True
         if targetDir == '':
-            targetDir = os.getcwd()
+            targetDir = cwd
+            targetArgEmpty = True
 
         # if findDir is not the current working directory, change to it
-        if os.getcwd() != findDir:
+        if (not findArgEmpty) and (cwd != findDir):
             os.chdir(findDir)
+            self.logger.debug("Changed to directory: " + findDir + " to find file")
 
-        #
-        hierarchical_data_extensions = '.hdf', '.h4', '.hdf4', '.he2', '.h5', '.hdf5', '.he5' # extensions of hierarchical data files
+        # check if the ɡiven file extension matches pre-defined hierarchical data extensions, in which case we convert
+        # NOTE TO SELF: be sure these don't have '.' in front of them, because the split that finds fext removes '.'
+        #               from the filename string
+        hierarchical_data_extensions = 'hdf', 'h4', 'hdf4', 'he2', 'h5', 'hdf5', 'he5'
         if any(hext.lower() == fext.lower() for hext in hierarchical_data_extensions):
-            self.logger.info("Converting {} to CSV from a hierarchical data format".format(fn))
+            self.logger.info("\t\t Converting {} to CSV from a hierarchical data format".format(fn))
 
-            # TODO: consider adding chunksize argument to pd.read_hdf
+            # TODO: consider adding chunksize argument to pd.read_hdf in case we download too larɡe of a file
             # read the file
             df = pd.read_hdf(fn)
 
             # convert to CSV
-            if os.getcwd() != targetDir:
+            if (not targetArgEmpty) and (cwd != targetDir):  # move to appropriate directory if not already there
                 os.chdir(targetDir)
+                self.logger.debug("Changed to directory: " + targetDir + " to write file")
+            self.logger.debug("Calling pd.read_hdf and pd.to_csv to convert {} to CSV".format(fn))
             df.to_csv(fn + ".csv")
-            self.logger.info("Called pd.read_hdf and pd.to_csv to convert {} to CSV".format(fn))
+            # TODO: confirm that the file was actually created
+            # TODO: be sure that all rows were written; some people have experienced incomplete transcription
 
         if deleteOriginal:
             os.remove(fn)
-            self.logger.info("Deleted original file {}".format(fn))
+            self.logger.debug("Deleted original file {}".format(fn))
 
         if destDir != '':
-            if os.getcwd() != destDir:
+            if cwd != destDir:
                 os.rename(fn, os.path.join(destDir, fn))
                 self.logger.info("Moved file to {}".format(destDir))
 
@@ -633,7 +656,7 @@ class wile:
                 # os.rename(outfn, os.path.join(self.DATA_TMP_DIR, outfn)) # move the file to the tmp directory  # TODO: adjust so that file isn't overwritten unless directed
                 os.replace(outfn, os.path.join(self.DATA_TMP_DIR, outfn)) # move the file to the tmp directory
                 self.logger.info("Converting file to CSV")
-                self.gesdisc_convert_to_csv(outfn, self.DATA_TMP_DIR, self.DATA_DIR, deleteOriginal=True)
+                self.gesdisc_convert_to_csv(outfn, self.DATA_TMP_DIR, self.DATA_DIR)
             except:
                 self.logger.error('Error! Status code is %d for this URL:\n%s' % (result.status.code, URL))
                 self.logger.info('Help for downloading data is at https://disc.gsfc.nasa.gov/information/documents?title=Data%20Access')
