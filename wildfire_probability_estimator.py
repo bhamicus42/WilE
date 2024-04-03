@@ -656,7 +656,7 @@ class wile:
                 # os.rename(outfn, os.path.join(self.DATA_TMP_DIR, outfn)) # move the file to the tmp directory  # TODO: adjust so that file isn't overwritten unless directed
                 os.replace(outfn, os.path.join(self.DATA_TMP_DIR, outfn)) # move the file to the tmp directory
                 self.logger.info("Converting file to CSV")
-                self.gesdisc_convert_to_csv(outfn, self.DATA_TMP_DIR, self.DATA_DIR)
+                # self.gesdisc_convert_to_csv(outfn, self.DATA_TMP_DIR, self.DATA_DIR) # work on this later
             except:
                 self.logger.error('Error! Status code is %d for this URL:\n%s' % (result.status.code, URL))
                 self.logger.info('Help for downloading data is at https://disc.gsfc.nasa.gov/information/documents?title=Data%20Access')
