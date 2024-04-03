@@ -1,3 +1,22 @@
-2024-04-02 14:06:31,042:__init__:G:\g\WilE
-2024-04-02 14:06:31,042:__init__:beep beep settin up the tootle toot:
-wile object instantiated
+2024-04-03 11:51:06,353:__init__:G:\g\WilE
+2024-04-03 11:51:06,353:__init__:beep beep settin up the tootle toot:
+		wile object instantiated
+2024-04-03 11:51:06,354:earthdata_setup_auth:Attempting to create .netrc file...
+2024-04-03 11:51:06,354:earthdata_setup_auth:Wrote .netrc file
+2024-04-03 11:51:06,354:earthdata_setup_auth:Attempting to create .dodsrc file...
+2024-04-03 11:51:06,354:earthdata_setup_auth:Wrote .dodsrc file
+2024-04-03 11:51:06,355:earthdata_setup_auth:Attempting to create .urs_cookies file...
+2024-04-03 11:51:06,355:earthdata_setup_auth:Wrote .urs_cookies file
+2024-04-03 11:51:06,355:earthdata_setup_auth:Saved .netrc, .urs_cookies, and .dodsrc to:C:\Users\arche\
+2024-04-03 11:51:11,571:pull_ldas_rt:Job ID: 660da51c107ce10d3682a225
+2024-04-03 11:51:11,572:pull_ldas_rt:Job status: Accepted
+2024-04-03 11:51:17,047:pull_ldas_rt:Job status: Succeeded (100% complete)
+2024-04-03 11:51:17,048:pull_ldas_rt:Job Finished:  Complete (ML2T_004)
+2024-04-03 11:51:17,535:pull_ldas_rt:Retrieved 5 out of 5 expected items
+2024-04-03 11:51:17,535:pull_ldas_rt:
+See GES DISC documentation:
+2024-04-03 11:51:17,535:pull_ldas_rt:EOS MLS Retrieval Process Algorithm Theoretical Basis: https://mls.jpl.nasa.gov/data/eos_algorithm_atbd.pdf
+2024-04-03 11:51:17,536:pull_ldas_rt:Data Quality and Description Document: https://mls.jpl.nasa.gov/data/v4-2_data_quality_document.pdf
+2024-04-03 11:51:17,536:pull_ldas_rt:Left files in G:\g\WilE\data
+2024-04-03 11:51:17,536:pull_ldas_rt:
+Downloading data:

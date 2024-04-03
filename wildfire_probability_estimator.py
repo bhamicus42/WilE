@@ -58,19 +58,22 @@ def setup_new_dir(base_dir, new_dir):
 
     return new_dir_path
 
-def earthdata_setup_auth(caller, auth, cert_dest, urs='urs.Earthdata.nasa.gov'):
+def earthdata_setup_auth(caller, auth, cert_dest='', urs='urs.Earthdata.nasa.gov'):
     """
     Creates .netrc, .urs_cookies, and .dodsrc files in bash home directory; these files are prerequisite authenticators
-    to access GES DISC data such as Earthdata's LDAS set
+    to access GES DISC data such as Earthdata's LDAS set. Will also create a .dodsrc file if desired.
     :param caller: self parameter of whoever called
-    :param cert_dest: string giving path to destination of the certificates like the .dodsrc file
     :param auth: dictionary giving authentication details; must have structure {'login':<login>, 'password':<password>}
+    :param cert_dest: string giving path for where to place certificates like the .dodsrc file. Defaults to auth.
     :param urs: string giving URL to call for Earthdata authentication. Defaults to 'urs.Earthdata.nasa.gov'
     :return: none
     """
 
-    # get directory of whoever called
+    # get bash home directory
     auth_dir = os.path.expanduser("~") + os.sep
+    cert_dest = os.getcwd()
+    # if cert_dest == '':
+    #     cert_dest = auth_dir
 
     with open(auth_dir + '.netrc', 'w') as file:
         caller.logger.info("Attempting to create .netrc file...")
@@ -88,7 +91,7 @@ def earthdata_setup_auth(caller, auth, cert_dest, urs='urs.Earthdata.nasa.gov'):
         file.write('')
         caller.logger.info("Wrote .urs_cookies file")
 
-    caller.logger.info('Saved .netrc, .urs_cookies, and .dodsrc to:' + cert_dest)
+    caller.logger.info('Saved .netrc, .urs_cookies, and .dodsrc to:' + auth_dir)
 
     # Set appropriate permissions for Linux/macOS
     if platform.system() != "Windows":
@@ -97,9 +100,9 @@ def earthdata_setup_auth(caller, auth, cert_dest, urs='urs.Earthdata.nasa.gov'):
         # Copy dodsrc to working directory in Windows if the two aren't the same place
         if auth_dir != cert_dest:
             shutil.copy2(auth_dir + '.dodsrc', cert_dest)
-            caller.logger.info('Copied .dodsrc to:', os.getcwd())
+            # caller.logger.info('Copied .dodsrc to:', cert_dest)
 
-    caller.GES_DISC_AUTH_SETUP_FLAG = True
+    caller.EARTHDATA_AUTH_SETUP_FLAG = True
     
     
     
@@ -162,16 +165,33 @@ class wile:
                                 "OBSERVATIONS.dew_point_temperature_value_1.value",
                                 "OBSERVATIONS.relative_humidity_value_1.date_time",
                                 "OBSERVATIONS.relative_humidity_value_1.value"],
-                 gesdisc_auth_setup_flag=False,
-                 gesdisc_auth_path='C:\\Users\\arche\\WilE certs\\Earthdata',   # TODO: talk about this in documentation
-                 gesdisc_auth_fname='login.txt',
+                 earthdata_auth_setup_flag=False,
+                 earthdata_auth_path='',   # TODO: talk about this in documentation
+                 earthdata_auth_fname='login.txt',
                  auto_clean=True,  # whether to automatically clean data according to preprogrammed parameters
                  logger_level=20,
                  logname="output_log.txt",
                  logger_formatter_string="%(asctime)s:%(funcName)s:%(message)s",
                  delete_old_logs=True,
                  print_to_console=True):
-
+        """"
+        Initializes a WilE object
+        :param syn_token: string giving the token for the Synoptic API
+        :param syn_api_root: string giving the root URL for the Synoptic API
+        :param syn_time_format: string giving the format for time specifiers in Synoptic API URLs
+        :param syn_rt_filter: string giving the filter to get real-time data in Synoptic API requests
+        :param syn_resp_cols: list of strings giving the normalized columns of the synoptic response to keep
+        :param earthdata_auth_setup_flag: boolean giving whether the GES DISC authentication files have been set up
+        :param earthdata_auth_path: string giving the path to the text file that contains login and password for
+                                    Earthdata. Defaults to caller directory.
+        :param earthdata_auth_fname: string giving the filename of the aforementioned text file
+        :param auto_clean: boolean giving whether to automatically clean data according to preprogrammed parameters
+        :param logger_level: integer giving the logging level, defaults to 20. Levels are 10 (DEBUG), 20 (INFO),
+                             30 (WARNING), and 40 (ERROR)
+        :param logname: string giving the name of the .txt file to save log output, defaults to "output_log.txt"
+        :param logger_formatter_string: string giving the format for the logger
+        :param delete_old_logs: boolean giving whether to delete old logs
+        :param print_to_console: boolean giving whether to print logs to console"""
         # set global constants for this class
         self.CALLER_DIR = sys.path[0]  # gets location of the file calling/running this code
         self.DATA_DIR = setup_new_dir(self.CALLER_DIR, "data")  # location of data for use
@@ -198,11 +218,14 @@ class wile:
         # TODO: check what the difference is between sea level pressure measurement 1 and 1d is, what air temp 1 and 2 is
         self.SYNOPTIC_RESPONSE_COLUMNS = syn_resp_cols
 
-        self.GES_DISC_AUTH_SETUP_FLAG = gesdisc_auth_setup_flag  # whether or not the GES DISC authentication files
+        self.EARTHDATA_AUTH_SETUP_FLAG = earthdata_auth_setup_flag  # whether or not the GES DISC authentication files
                                                                  # have been setup yet. These are needed to access any
                                                                  # GES DISC data like LDAS
-        self.GES_DISC_AUTH_PATH = gesdisc_auth_path
-        self.GES_DISC_AUTH_FNAME = gesdisc_auth_fname
+        if earthdata_auth_path == '':
+            self.EARTHDATA_AUTH_PATH = self.CALLER_DIR
+        else:
+            self.EARTHDATA_AUTH_PATH = earthdata_auth_path
+        self.EARTHDATA_AUTH_FNAME = earthdata_auth_fname
 
         self.AUTO_CLEAN = auto_clean
 
@@ -234,7 +257,7 @@ class wile:
         # https://www.youtube.com/watch?v=jxmzY9soFXg
         # https://docs.python.org/3/library/logging.html
 
-        self.logger.info("beep beep settin up the tootle toot:\n" + "wile object instantiated")
+        self.logger.info("beep beep settin up the tootle toot:\n" + "\t\t" + "wile object instantiated")
 
 
 
@@ -247,7 +270,7 @@ class wile:
         # delete dodsrc that was copied to caller dir
         os.chdir(self.CALLER_DIR)
 
-        os.chdir(os.path.expanduser("~") + os.sep)  # go to bash root where auth files were stored
+        # os.chdir(os.path.expanduser("~") + os.sep)  # go to bash root where auth files were stored
         # delete GES DISC authentication files if they exist
         os.chdir(self.CALLER_DIR)  # return to whence we came
 
@@ -288,14 +311,14 @@ class wile:
         """
         # how to make prereq files that you need in order to access GES DISC data like Earthdata's LDAS:
         # https://disc.gsfc.nasa.gov/information/howto?title=How%20to%20Generate%20Earthdata%20Prerequisite%20Files
-        # if not self.GES_DISC_AUTH_SETUP_FLAG:  # if GES DISC authentication hasn't already been set up, do so
+        # if not self.EARTHDATA_AUTH_SETUP_FLAG:  # if GES DISC authentication hasn't already been set up, do so
         #     earthdata_auth = get_dict_from_file(auth_path, auth_fname)
         #     earthdata_setup_auth(earthdata_auth, dodsrc_dest=self.CALLER_DIR)  # TODO: ascertain whether caller dir is
         #                                                                        #       always appropriate place to put
         #                                                                        #       dodsrc document
 
         # Set up the GES DISC authentication files
-        # earthdata_auth = get_dict_from_file(self.GES_DISC_AUTH_PATH, self.GES_DISC_AUTH_FNAME)
+        # earthdata_auth = get_dict_from_file(self.EARTHDATA_AUTH_PATH, self.EARTHDATA_AUTH_FNAME)
 
         urs = 'urs.earthdata.nasa.gov'  # Earthdata URL to call for authentication
 
@@ -330,7 +353,7 @@ class wile:
             shutil.copy2(homeDir + '.dodsrc', os.getcwd())
             print('Copied .dodsrc to:', os.getcwd())
 
-        self.GES_DISC_AUTH_SETUP_FLAG = True
+        self.EARTHDATA_AUTH_SETUP_FLAG = True
 
 
 
@@ -490,10 +513,11 @@ class wile:
         """
         Pulls most recent LDAS data from GES DISC Earthdata using authentication data stored in a text file at a
         location defined in __init__
+        Modified from the example code at:
         """
 
         # if GES DISC authentication hasn't already been set up, do so
-        if not self.GES_DISC_AUTH_SETUP_FLAG:
+        if not self.EARTHDATA_AUTH_SETUP_FLAG:
             # TODO: check if a credentials file exists in caller dir before using this
             # TODO: this isn't secure, strictly speaking, but it doesn't matter in our context. Still, consider only
             #       using a credential file and documenting it as a necessity for the script to run.
@@ -501,13 +525,9 @@ class wile:
             # place certificates in the home directory (C:/ for windows)
             earthdata_setup_auth(self, gesd_isc_auth, os.path.expanduser("~") + os.sep)
 
-
         # This method POSTs formatted JSON WSP requests to the GES DISC endpoint URL and returns the response
         def get_http_data(request):
-
-            hdrs = {}
-            hdrs['Content-Type'] = 'application/json'
-            hdrs['Accept'] = 'application/json'
+            hdrs = {'Content-Type': 'application/json', 'Accept': 'application/json'}
             data = json.dumps(request)
             r = http.request('POST', svcurl, body=data, headers=hdrs)
             response = json.loads(r.data)
