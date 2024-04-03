@@ -58,43 +58,8 @@ def setup_new_dir(base_dir, new_dir):
 
     return new_dir_path
 
-def earthdata_setup_auth(auth,
-                         dodsrc_dest,
-                         urs='urs.Earthdata.nasa.gov',  # Earthdata URL to call for authentication
-                         ):
-    """
-    Creates .netrc, .urs_cookies, and .dodsrc files in bash home directory; these files are prerequisite authenticators
-    to access GES DISC data such as Earthdata's LDAS set
-    :param dodsrc_dest: string giving path to destination of the .dodsrc file
-    :param auth: dictionary giving authentication details; must have structure 'login':<login>, 'password':<password>
-    :param urs: string giving URL to call for Earthdata authentication. Defaults to 'urs.Earthdata.nasa.gov'
-    :return: none
-    """
-    auth_dir = os.path.expanduser("~") + os.sep
 
-    with open(auth_dir + '.netrc', 'w') as file:
-        file.write('machine {} login {} password {}'.format(urs,
-                                                            auth['login'],
-                                                            auth['password']))
-        file.close()
-    with open(auth_dir + '.urs_cookies', 'w') as file:
-        file.write('')
-        file.close()
-    with open(auth_dir + '.dodsrc', 'w') as file:
-        file.write('HTTP.COOKIEJAR={}.urs_cookies\n'.format(auth_dir))
-        file.write('HTTP.NETRC={}.netrc'.format(auth_dir))
-        file.close()
 
-    # TODO:
-    # print('Saved .netrc, .urs_cookies, and .dodsrc to:', auth_dir)
-
-    # Set appropriate permissions for Linux/macOS
-    if platform.system() != "Windows":
-        Popen('chmod og-rw ~/.netrc', shell=True)
-    else:
-        # Copy dodsrc to working directory in Windows
-        shutil.copy2(auth_dir + '.dodsrc', dodsrc_dest)
-        # print('Copied .dodsrc to:', dodsrc_dest)
 
 def get_dict_from_file(d, fname):
     """
@@ -226,7 +191,7 @@ class wile:
         # https://www.youtube.com/watch?v=jxmzY9soFXg
         # https://docs.python.org/3/library/logging.html
 
-        self.logger.info("beep beep settin up the tootle toot:\n" + "wile object instantiated")
+        self.logger.info("beep beep boop, settin up the tootle toot: wile object instantiated")
 
 
 
@@ -281,6 +246,7 @@ class wile:
         # how to make prereq files that you need in order to access GES DISC data like Earthdata's LDAS:
         # https://disc.gsfc.nasa.gov/information/howto?title=How%20to%20Generate%20Earthdata%20Prerequisite%20Files
         if not self.GES_DISC_AUTH_SETUP_FLAG:  # if GES DISC authentication hasn't already been set up, do so
+            self.logger.info("Setting up GES DISC authentication files and placing .dodsrc at " + self.CALLER_DIR)
             earthdata_auth = get_dict_from_file(auth_path, auth_fname)
             earthdata_setup_auth(earthdata_auth, dodsrc_dest=self.CALLER_DIR)  # TODO: ascertain whether caller dir is
                                                                                #       always appropriate place to put
@@ -487,7 +453,6 @@ class wile:
 
         # This method POSTs formatted JSON WSP requests to the GES DISC endpoint URL and returns the response
         def get_http_data(request):
-
             hdrs = {}
             hdrs['Content-Type'] = 'application/json'
             hdrs['Accept'] = 'application/json'
