@@ -4,6 +4,7 @@ debug/
 outputs/output_log.txt
 /.vs/WilE/v17
 /.vs/WilE/FileContentIndex
+venv/Scripts/
 
 # GitHub's recommended ignores for Python
 
