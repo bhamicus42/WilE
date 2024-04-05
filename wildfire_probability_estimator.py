@@ -49,6 +49,11 @@ def setup_new_dir(base_dir, new_dir):
 
     return new_dir_path
 
+
+
+
+
+
 def earthdata_setup_auth(auth,
                          dodsrc_dest,
                          urs='urs.Earthdata.nasa.gov',  # Earthdata URL to call for authentication
