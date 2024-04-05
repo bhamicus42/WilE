@@ -1,32 +1,31 @@
-2024-04-03 13:19:51,940:__init__:C:\g\WilE
-2024-04-03 13:19:51,940:__init__:beep beep boop, settin up the tootle toot: wile object instantiated
-2024-04-03 13:19:51,940:pull_ldas_rt:Obtained homeDir: C:\Users\arche\
-2024-04-03 13:19:51,941:pull_ldas_rt:Attempting to create .netrc file...
-2024-04-03 13:19:51,941:pull_ldas_rt:Wrote .netrc file
-2024-04-03 13:19:51,941:pull_ldas_rt:Attempting to create .urs_cookies file...
-2024-04-03 13:19:51,941:pull_ldas_rt:Wrote .urs_cookies file
-2024-04-03 13:19:51,942:pull_ldas_rt:Attempting to create .dodsrc file...
-2024-04-03 13:19:51,942:pull_ldas_rt:Wrote .dodsrc file
-2024-04-03 13:19:51,946:pull_ldas_rt:Saved .netrc, .urs_cookies, and .dodsrc to:C:\Users\arche\
-2024-04-03 13:19:56,702:pull_ldas_rt:Job ID: 660db9e4e70138749b263d86
-2024-04-03 13:19:56,702:pull_ldas_rt:Job status: Accepted
-2024-04-03 13:20:02,103:pull_ldas_rt:Job status: Succeeded (100% complete)
-2024-04-03 13:20:02,103:pull_ldas_rt:Job Finished:  Complete (ML2T_004)
-2024-04-03 13:20:02,451:pull_ldas_rt:Retrieved 5 out of 5 expected items
-2024-04-03 13:20:02,451:pull_ldas_rt:
+2024-04-05 11:22:10,647:__init__:G:\g\WilE
+2024-04-05 11:22:10,648:__init__:beep beep boop, settin up the tootle toot: wile object instantiated
+2024-04-05 11:22:10,648:pull_ldas_rt:Obtained homeDir: C:\Users\arche\
+2024-04-05 11:22:10,648:pull_ldas_rt:Attempting to create .netrc file...
+2024-04-05 11:22:10,648:pull_ldas_rt:Wrote .netrc file
+2024-04-05 11:22:10,649:pull_ldas_rt:Attempting to create .urs_cookies file...
+2024-04-05 11:22:10,649:pull_ldas_rt:Wrote .urs_cookies file
+2024-04-05 11:22:10,649:pull_ldas_rt:Attempting to create .dodsrc file...
+2024-04-05 11:22:10,649:pull_ldas_rt:Wrote .dodsrc file
+2024-04-05 11:22:10,649:pull_ldas_rt:Saved .netrc, .urs_cookies, and .dodsrc to:C:\Users\arche\
+2024-04-05 11:22:15,413:pull_ldas_rt:Job ID: 661041547277a63d35beed75
+2024-04-05 11:22:15,414:pull_ldas_rt:Job status: Accepted
+2024-04-05 11:22:20,744:pull_ldas_rt:Job status: Succeeded (100% complete)
+2024-04-05 11:22:20,744:pull_ldas_rt:Job Finished:  Complete (ML2T_004)
+2024-04-05 11:22:21,062:pull_ldas_rt:Retrieved 5 out of 5 expected items
+2024-04-05 11:22:21,062:pull_ldas_rt:
 See GES DISC documentation:
-2024-04-03 13:20:02,452:pull_ldas_rt:EOS MLS Retrieval Process Algorithm Theoretical Basis: https://mls.jpl.nasa.gov/data/eos_algorithm_atbd.pdf
-2024-04-03 13:20:02,452:pull_ldas_rt:Data Quality and Description Document: https://mls.jpl.nasa.gov/data/v4-2_data_quality_document.pdf
-2024-04-03 13:20:02,452:pull_ldas_rt:Left files in C:\g\WilE\data
-2024-04-03 13:20:02,452:pull_ldas_rt:
+2024-04-05 11:22:21,062:pull_ldas_rt:EOS MLS Retrieval Process Algorithm Theoretical Basis: https://mls.jpl.nasa.gov/data/eos_algorithm_atbd.pdf
+2024-04-05 11:22:21,062:pull_ldas_rt:Data Quality and Description Document: https://mls.jpl.nasa.gov/data/v4-2_data_quality_document.pdf
+2024-04-05 11:22:21,062:pull_ldas_rt:Left files in G:\g\WilE\data
+2024-04-05 11:22:21,062:pull_ldas_rt:
 Downloading data:
-2024-04-03 13:20:07,641:pull_ldas_rt:Output filename: MLS-Aura_L2GP-Temperature_v04-22-c01_2015d213.SUB.he5
-2024-04-03 13:20:07,642:pull_ldas_rt:Moving file to tmp directory
-2024-04-03 13:20:07,643:pull_ldas_rt:Converting file to CSV
-2024-04-03 13:20:11,757:pull_ldas_rt:Output filename: MLS-Aura_L2GP-Temperature_v04-22-c01_2015d214.SUB.he5
-2024-04-03 13:20:11,757:pull_ldas_rt:Moving file to tmp directory
-2024-04-03 13:20:11,759:pull_ldas_rt:Converting file to CSV
-2024-04-03 13:20:15,850:pull_ldas_rt:Output filename: MLS-Aura_L2GP-Temperature_v04-22-c01_2015d215.SUB.he5
-2024-04-03 13:20:15,851:pull_ldas_rt:Moving file to tmp directory
-2024-04-03 13:20:15,852:pull_ldas_rt:Converting file to CSV
-2024-04-03 13:20:15,880:__del__:beep boop, takin down the tootle toot
+2024-04-05 11:22:30,865:pull_ldas_rt:Output filename: MLS-Aura_L2GP-Temperature_v04-22-c01_2015d213.SUB.he5
+2024-04-05 11:22:30,865:pull_ldas_rt:Moving file to tmp directory
+2024-04-05 11:22:30,865:pull_ldas_rt:Converting file to CSV
+2024-04-05 11:22:34,698:pull_ldas_rt:Output filename: MLS-Aura_L2GP-Temperature_v04-22-c01_2015d214.SUB.he5
+2024-04-05 11:22:34,698:pull_ldas_rt:Moving file to tmp directory
+2024-04-05 11:22:34,698:pull_ldas_rt:Converting file to CSV
+2024-04-05 11:22:38,542:pull_ldas_rt:Output filename: MLS-Aura_L2GP-Temperature_v04-22-c01_2015d215.SUB.he5
+2024-04-05 11:22:38,542:pull_ldas_rt:Moving file to tmp directory
+2024-04-05 11:22:38,542:pull_ldas_rt:Converting file to CSV

@@ -32,16 +32,7 @@ import pandas as pd
     # NOTE: be sure to have PyTables installed, pd is used to convert he5 to CSV, which uses tables dependencies
 
 
-def dir_return(d):
-    """
-    Checks if os.cwd is the desired dir. If so, return. If not, change to desired directory.
-    :param d: string giving the complete path of the desired dir.
-    :return: none
-    """
-    if os.getcwd() == d:
-        return
-    else:
-        os.chdir(d)
+
 
 def setup_new_dir(base_dir, new_dir):
     """
@@ -195,21 +186,6 @@ class wile:
 
 
 
-    # TODO
-    def __del__(self):
-        self.logger.info("beep boop, takin down the tootle toot")
-
-        # delete GES DISC authentication files
-
-        # delete dodsrc that was copied to caller dir
-        os.chdir(self.CALLER_DIR)
-
-        os.chdir(os.path.expanduser("~") + os.sep)  # go to bash root where auth files were stored
-        # delete GES DISC authentication files if they exist
-        os.chdir(self.CALLER_DIR)  # return to whence we came
-
-
-
     def gesdisc_get_http_data(self, request, http, svcurl):
         """
         POSTs formatted JSON WSP requests to the GES DISC endpoint URL and returns the response
@@ -236,62 +212,6 @@ class wile:
 
 
 
-    # TODO
-    def pull_everything(self):
-        # pull all data sources, including updating historical set
-        self.logger.info("pull_everything() was called; this is still under construction!")
-        self.logger.info("Pulling data from ALL built-in sources. Historical data being updated.\n",
-                         "This may take several hours!")
-
-    # TODO
-    def pull_rt(self):
-        # pull realtime data
-        self.logger.debug("pull_rt was called. This is still under construction!")
-
-    def pull_synoptic_rt(self, auto_clean=True, write=True):
-        """
-        Pulls the latest weather data from the Synoptic API
-        :param auto_clean: whether to instruct the API to remove any data that was flagged for quality control;
-                           default True
-        :param write: whether to write the response to a CSV file; default True
-        :return: none
-        """
-
-        self.logger.info("Pulling latest synoptic weather data.")
-        self.logger.debug("Auto_clean = {} and write = {}".format(auto_clean, write))
-
-        syn_api_rt_req_url = os.path.join(self.SYNOPTIC_API_ROOT, self.SYNOPTIC_RT_FILTER)  # URL to request synoptic data
-        # arguments to pass to the synoptic API
-        # TODO: either make two CSVs or two separate requests so that all vars needed to calc dewpoint dep are present together
-        # TODO: find out how to measure sustained wind speed. Var to get instantaneous is wind_speed
-        syn_api_args = {"state": "CA", "units": "metric,speed|kph,pres|mb", "varsoperator": "or",
-                        "vars": "air_temp,sea_level_pressure,relative_humidity,dew_point_temperature,soil_temp,precip_accum",
-                        "syn_token": self.SYNOPTIC_API_TOKEN}
-
-        syn_resp = requests.get(syn_api_rt_req_url, params=syn_api_args)
-        syn_resp = syn_resp.json()  # despite it being called json(), this returns a dict object from the requests module
-
-        syn_df = pd.json_normalize(syn_resp['STATION'])
-        if self.AUTO_CLEAN:
-            syn_df = syn_df[syn_df.QC_FLAGGED != "TRUE"]  # this removes any row that was flagged for
-                                                          # quality control
-            syn_df = syn_df[self.SYNOPTIC_RESPONSE_COLUMNS]  # this removes all columns except the ones in
-                                                             # SYNOPTIC_RESPONSE_COLUMNS
-
-        # write the synoptic request to a CSV file
-        if write:
-            # TODO: decompose object to CSV file process
-            # TODO: decompose datetime retrieval and concatenation?
-            # TODO: consider making syn_csv_filename a global const
-            syn_csv_filename = "synoptic_rt_request.csv"
-            os.chdir(self.DATA_RT_DIR)
-            syn_df.to_csv(syn_csv_filename)
-            self.logger.info("Wrote latest synoptic data response to CSV file")
-
-            if self.logger.level == 10:  # if set to debug, open the historic csv to be sure it was retrieved properly
-                os.startfile(os.path.join(os.getcwd(), syn_csv_filename))
-            os.chdir(self.CALLER_DIR)
-
     def pull_ldas_rt(self):
         """
         Pulls most recent LDAS data from GES DISC Earthdata using authentication data stored in a text file at a
@@ -302,7 +222,7 @@ class wile:
         earthdata_auth = get_dict_from_file(self.GES_DISC_AUTH_PATH, self.GES_DISC_AUTH_FNAME)
 
         urs = 'urs.earthdata.nasa.gov'  # Earthdata URL to call for authentication
-        
+
         homeDir = os.path.expanduser("~") + os.sep
         self.logger.info("Obtained homeDir: " + homeDir)
 
@@ -509,101 +429,3 @@ class wile:
             except:
                 self.logger.error('Error! Status code is %d for this URL:\n%s' % (result.status.code, URL))
                 self.logger.info('Help for downloading data is at https://disc.gsfc.nasa.gov/information/documents?title=Data%20Access')
-
-
-
-    # TODO
-    def pull_historic(self):
-        # pull historic data
-        self.logger.debug("pull_historic() was called")
-
-
-
-    def pull_synoptic_hist(self):
-        # TODO
-        # pull synoptic data as far back as arg
-        self.logger.debug("pulling synoptic timeseries data \n" +
-                          "NOTE: this function isn't complete and doesn't work yet! \n" +
-                          "WARNING: it may take up to several hours to fulfill a timeseries request longer than one day!")
-
-        SYNOPTIC_HIST_FILTER = "stations/timeseries"  # filter for timeseries data TODO: refactor so that this is function argument
-        # SYN_HIST_START not needed
-        if self.logger.level == 10:  # if logging level set to debug, only retrieve a little historic data
-            syn_hist_start_dt = datetime.now()
-            syn_hist_start_dt -= timedelta(hours=3)  # only go back a bit from now
-            SYN_HIST_START = syn_hist_start_dt.strftime(self.SYN_TIME_FORMAT)
-        else:  # otherwise go waaaay back
-            SYN_HIST_START = "199001010000"  # earliest time to seek to is 1990/01/01, 00:00.
-                                             # Most data will be nowhere near that.
-                                             # TODO: make this function arg.
-
-        # TODO: these might need to be function args
-        syn_api_args = {"state": "CA", "units": "metric,speed|kph,pres|mb", "varsoperator": "or",
-                        "vars": "air_temp,sea_level_pressure,relative_humidity,dew_point_temperature,soil_temp,precip_accum",
-                        "syn_token": self.SYNOPTIC_API_TOKEN}  # TODO: this might need to go someplace else
-        syn_hist_end = datetime.now().strftime(self.SYN_TIME_FORMAT)  # string giving current datetime; pull up to the absolute most recent data
-        syn_api_hist_req_url = os.path.join(self.SYNOPTIC_API_ROOT, SYNOPTIC_HIST_FILTER)  # URL to request synoptic data
-        syn_hist_args = syn_api_args
-
-        # Requesting all recorded timeseries for CA is too much at once. Instead, request timeseries in day-long chunks.
-        # This uses the datetime module to create 2 datetime objects that will outline each chunk.
-        chunk_range_end = syn_hist_end  # string; first end of range should be datetime.now()
-        chunk_end_dt = datetime.strptime(chunk_range_end, self.SYN_TIME_FORMAT)  # datetime object giving the end of the chunk timerange
-        chunk_end_dt -= timedelta(hours=1)  # run the chunk end dt (but not the string!) back 1 day
-        chunk_range_start = chunk_end_dt.strftime(self.SYN_TIME_FORMAT)  # datetime object giving the start of the chunk timerange
-        # chunk_start_dt not needed
-
-        start_dt = datetime.strptime(SYN_HIST_START, self.SYN_TIME_FORMAT)  # datetime giving the very earliest date to seek to
-        range_delta = chunk_end_dt - start_dt  # time difference in complete target range
-        min_delta = timedelta(hours=1)  # set minimum distance between the current chunk and the earliest date
-
-        syn_hist_args["START"] = chunk_range_start
-        syn_hist_args["END"] = chunk_range_end
-        syn_resp = requests.get(syn_api_hist_req_url, params=syn_hist_args, headers={'Accept': 'application/json'})
-        syn_dict = syn_resp.json()  # convert to dict of dicts
-
-        self.logger.debug("start={}, end={} \n\nbeginning while loop:".format(SYN_HIST_START, syn_hist_end))
-
-        while range_delta > min_delta:
-            self.logger.debug("iterating: chunk start={}, chunk end={}".format(chunk_range_start,
-                                                                               chunk_range_end))
-
-            # construct timeseries query
-            syn_hist_args["START"] = chunk_range_start
-            syn_hist_args["END"] = chunk_range_end
-            chunk_resp = requests.get(syn_api_hist_req_url, params=syn_hist_args)  # send request and store response
-                                                                                   # for this chunk
-            chunk_dict = chunk_resp.json()
-            syn_dict.update(chunk_dict)
-
-            # update chunk boundaries and distance from next chunk to the earliest date
-            chunk_range_end = chunk_range_start
-            chunk_end_dt = datetime.strptime(chunk_range_end, self.SYN_TIME_FORMAT)  # temporary datetime object of the chunk range end
-            chunk_end_dt -= timedelta(hours=1)  # run back one day
-            chunk_range_start = chunk_end_dt.strftime(self.SYN_TIME_FORMAT)
-            range_delta = chunk_end_dt - start_dt
-
-            self.logger.debug("retrieved one chunk")
-
-        # if set to debug, save raw response as text file
-        if self.logger.level == 10:
-            os.chdir(self.DEBUG_DIR)
-            with open("synoptic historic raw response.txt", 'w') as f:
-                f.write(json.dumps(syn_dict, indent=4))
-
-        os.chdir(self.DATA_HIST_DIR)
-
-        # convert JSON to pandas df
-        syn_hist_df = pd.json_normalize(syn_dict['STATION'])
-
-
-        now = datetime.now()  # get current datetime
-        now_str = now.strftime("%m.%d.%Y_%H.%M.%S")  # convert the datetime to a string
-        syn_hist_filename = "synoptic_historical_retrieved_" + now_str + ".csv"
-        syn_hist_df.to_csv(syn_hist_filename)
-
-        self.logger.info("saved historical measurements to csv\n" +
-                         "filename = {}\n".format(syn_hist_filename) +
-                         "path = {}\n".format(os.getcwd()))
-
-        os.chdir(self.CALLER_DIR)
